@@ -168,9 +168,11 @@ export const WinCelebration = {
     label.anchor.set(0.5);
     const tw = label.texture.orig ? label.texture.orig.width : label.texture.width;
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
-    // COVER full reel viewport (Math.max — image fills 100%, may crop edges).
+    // CONTAIN viewport (Math.min — image fully visible, may letterbox edges).
+    // Pakai 0.92 multiplier supaya ada sedikit margin biar gak terlalu mepet ke edge.
+    // Sebelumnya: Math.max = COVER (crop), tapi user complain BIG WIN ke-crop di mobile.
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.max(W / tw, H / th)
+      ? Math.min(W / tw, H / th) * 0.92
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {

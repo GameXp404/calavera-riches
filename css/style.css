@@ -2948,12 +2948,12 @@ button, .menu-action-btn, .picker-opt, .ctrl-btn, .util-btn, .spin-btn {
   body { touch-action: manipulation; }
 
   /* PERF: STOP heavy background animations on mobile (huge GPU saving).
-     Petals, marquee, button shimmers etc cause constant compositor work. */
+     Tapi animasi cheap (breathe, badge pulse) tetap aktif untuk feel premium. */
   .petal, .petals { display: none !important; }
   .marquee-track { animation: none !important; }
   .spin-btn::before { animation: none !important; }   /* spin button shimmer */
-  .mult-badge.center { animation: none !important; }  /* multiplier badge breathe */
-  .freespin-badge { animation: none !important; }
+  /* .mult-badge.center: TETAP AKTIF — user request, breathing penting untuk feel */
+  /* .freespin-badge: TETAP AKTIF — penting untuk emphasis selama FS */
   #balance.balance-up { animation: none !important; } /* balance flash */
   .pwa-install { animation: none !important; }
   .splash-skull { animation: none !important; }
