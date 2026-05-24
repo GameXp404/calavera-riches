@@ -119,7 +119,14 @@ export const WinCelebration = {
 
     const overlay = new PIXI.Container();
     stage.addChild(overlay);
-    const W = app.screen.width, H = app.screen.height;
+    // CRITICAL: Stage may have a scale != 1 (from handleResize stage scaling for
+    // responsive design). Overlay is added to stage so it inherits the scale.
+    // To position correctly in stage-local coordinates, we must DIVIDE app.screen
+    // by stage.scale. Otherwise label x=W/2 ends up at canvas_pixel x = (W/2)*scale,
+    // which offsets the image to the right + makes it 1.5x bigger than expected.
+    const stageScale = stage.scale.x || 1;
+    const W = app.screen.width / stageScale;
+    const H = app.screen.height / stageScale;
     const cx = W / 2, cy = H / 2;
 
     // Dark vignette — lighter now since image is the focal element
@@ -168,14 +175,11 @@ export const WinCelebration = {
     label.anchor.set(0.5);
     const tw = label.texture.orig ? label.texture.orig.width : label.texture.width;
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
-    // HARD CAP: image max 55% width × 38% height of canvas (very conservative).
-    // Account for bandit.png frame eating ~15% on each side + top arch + bottom HUD.
-    // Plus NO entrance overshoot — image goes straight to settle size.
-    // Tested: works on mobile portrait 350x576 → image 192x142, well within safe area.
-    const maxW = W * 0.55;
-    const maxH = H * 0.38;
+    // CONTAIN viewport: Math.min so image fully visible.
+    // Now uses stage-local W,H so scale is correct.
+    // Margin 0.95 for slight breathing room from edges.
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.min(maxW / tw, maxH / th)
+      ? Math.min(W / tw, H / th) * 0.95
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {
@@ -279,8 +283,10 @@ export const WinCelebration = {
       // F3 Label entrance: simultaneous rotation + drop + scale pop (scaled to image fit)
       .to(label, { rotation: 0, duration: 0.75, ease: 'power3.out' }, '-=0.3')
       .to(label, { y: labelSettleY, duration: 0.6, ease: 'back.out(1.8)' }, '<')
-      // NO overshoot — image goes straight to settle size to guarantee no overflow
-      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.55, ease: 'back.out(2.5)' }, '<')
+      // Modest overshoot 1.05x for entrance pop (label.scale temporarily goes over,
+      // but 1.05 * 0.95 margin = 0.998 ≤ 1.0, so still fits in viewport)
+      .to(label.scale, { x: labelTargetScale * 1.05, y: labelTargetScale * 1.05, duration: 0.55, ease: 'back.out(2.5)' }, '<')
+      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.25, ease: 'power2.out' })
       // F3 Wobble settle — brief rotation oscillation before holding still
       .to(label, { rotation: wobbleAmp, duration: 0.12, ease: 'sine.inOut' })
       .to(label, { rotation: -wobbleAmp * 0.65, duration: 0.13, ease: 'sine.inOut' })
