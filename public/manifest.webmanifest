@@ -1,0 +1,42 @@
+{
+  "name": "Calavera Riches — 1024 Ways",
+  "short_name": "Calavera",
+  "description": "Mexican Day of the Dead themed 1024-ways cascade slot game",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a0808",
+  "theme_color": "#f39c12",
+  "lang": "id",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/assets/img/CalaveraRiches.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/CalaveraRiches.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/CalaveraRiches.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/img/CalaveraRiches.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "prefer_related_applications": false
+}

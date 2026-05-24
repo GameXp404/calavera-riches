@@ -1,0 +1,25 @@
+{
+  "name": "calavera-riches",
+  "version": "1.0.0",
+  "description": "Calavera Riches - Mexican Day of the Dead 1024 Ways slot game",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5",
+    "pixi.js": "^7.4.2",
+    "@pixi/filter-glow": "^5.2.1",
+    "@pixi/filter-godray": "^5.1.1",
+    "@pixi/particle-emitter": "^5.0.10"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

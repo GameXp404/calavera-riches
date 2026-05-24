@@ -1,0 +1,40 @@
+# Netlify Build Configuration for Calavera Riches
+# This file tells Netlify HOW to build & deploy the project automatically.
+# Push this file to your GitHub repo root — Netlify will detect & use it.
+
+[build]
+  # Command to build the project (Vite production build)
+  command = "npm run build"
+
+  # Folder to publish (Vite outputs to dist/)
+  publish = "dist"
+
+[build.environment]
+  # Use Node.js 20 (matches local dev environment)
+  NODE_VERSION = "20"
+  # Allocate more memory for build (prevents OOM on PixiJS bundling)
+  NODE_OPTIONS = "--max-old-space-size=4096"
+
+# Cache headers for static assets (faster repeat visits)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    # Service worker must NOT be cached aggressively (so updates roll out)
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/manifest+json"
+
+# SPA fallback — all routes serve index.html (game uses client-side state, no server routing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

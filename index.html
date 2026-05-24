@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="description" content="Calavera Riches — Mexican Day of the Dead themed 1024-ways cascade slot game with Free Spin bonus, Wild conversion mechanic, and multiplier ladder up to ×50.">
+  <title>Calavera Riches — 1024 Ways</title>
+
+  <!-- PWA / Mobile App Tags -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#f39c12">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Apple iOS specific -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calavera">
+  <link rel="apple-touch-icon" href="/assets/img/CalaveraRiches.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/assets/img/CalaveraRiches.png">
+  <link rel="shortcut icon" href="/assets/img/CalaveraRiches.png">
+
+  <!-- Social sharing (Open Graph) -->
+  <meta property="og:title" content="Calavera Riches — 1024 Ways Slot">
+  <meta property="og:description" content="Mexican Day of the Dead themed slot game. Free Spin bonus + Wild conversion + multiplier ×50.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/assets/img/CalaveraRiches.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="login-screen">
+    <!-- Floating marigold petals (Día de los Muertos atmospheric particles) -->
+    <div class="petals">
+      <span class="petal" style="--l:8%;  --d:0s;   --t:11s; --r:140deg; --s:0.8;"></span>
+      <span class="petal" style="--l:18%; --d:2s;   --t:14s; --r:-160deg; --s:1.0;"></span>
+      <span class="petal" style="--l:28%; --d:4s;   --t:9s;  --r:180deg; --s:0.7;"></span>
+      <span class="petal" style="--l:38%; --d:1s;   --t:12s; --r:-120deg; --s:0.9;"></span>
+      <span class="petal" style="--l:48%; --d:3s;   --t:15s; --r:200deg; --s:0.85;"></span>
+      <span class="petal" style="--l:58%; --d:5.5s; --t:10s; --r:-180deg; --s:1.1;"></span>
+      <span class="petal" style="--l:68%; --d:0.5s; --t:13s; --r:160deg; --s:0.75;"></span>
+      <span class="petal" style="--l:78%; --d:2.5s; --t:11s; --r:-140deg; --s:0.95;"></span>
+      <span class="petal" style="--l:88%; --d:4.5s; --t:14s; --r:220deg; --s:0.8;"></span>
+      <span class="petal" style="--l:12%; --d:6s;   --t:12s; --r:-200deg; --s:1.0;"></span>
+      <span class="petal" style="--l:32%; --d:7s;   --t:10s; --r:170deg; --s:0.65;"></span>
+      <span class="petal" style="--l:52%; --d:8s;   --t:13s; --r:-180deg; --s:0.9;"></span>
+      <span class="petal" style="--l:72%; --d:5s;   --t:15s; --r:140deg; --s:1.05;"></span>
+      <span class="petal" style="--l:92%; --d:1.5s; --t:9s;  --r:-150deg; --s:0.7;"></span>
+      <span class="petal" style="--l:22%; --d:9s;   --t:11s; --r:190deg; --s:0.85;"></span>
+    </div>
+
+    <!-- Animated papel picado banner (Día de los Muertos paper flags swaying at top) -->
+    <div class="papel-picado">
+      <div class="papel-string"></div>
+      <div class="papel-flag" style="--c:#e94560; --d:0s;"></div>
+      <div class="papel-flag" style="--c:#f39c12; --d:0.15s;"></div>
+      <div class="papel-flag" style="--c:#f7c873; --d:0.30s;"></div>
+      <div class="papel-flag" style="--c:#27ae60; --d:0.45s;"></div>
+      <div class="papel-flag" style="--c:#5dc9ff; --d:0.60s;"></div>
+      <div class="papel-flag" style="--c:#c45ddc; --d:0.75s;"></div>
+      <div class="papel-flag" style="--c:#e94560; --d:0.90s;"></div>
+      <div class="papel-flag" style="--c:#f39c12; --d:1.05s;"></div>
+      <div class="papel-flag" style="--c:#f7c873; --d:1.20s;"></div>
+      <div class="papel-flag" style="--c:#27ae60; --d:1.35s;"></div>
+      <div class="papel-flag" style="--c:#5dc9ff; --d:1.50s;"></div>
+      <div class="papel-flag" style="--c:#c45ddc; --d:1.65s;"></div>
+    </div>
+    <!-- Idle attract teaser — appears after 5s of no user interaction -->
+    <div id="login-attract" class="login-attract hidden">
+      <div class="attract-symbols">
+        <img class="attract-sym sym1" src="/assets/img/catrina.png" alt="Wild">
+        <img class="attract-sym sym2" src="/assets/img/mariachi.png" alt="Mariachi">
+        <img class="attract-sym sym3" src="/assets/img/coffin.png" alt="Scatter">
+        <img class="attract-sym sym4" src="/assets/img/guitar.png" alt="Guitar">
+        <img class="attract-sym sym5" src="/assets/img/skull.png" alt="Skull">
+      </div>
+      <div class="attract-card">
+        <p class="attract-label">JACKPOT TERTINGGI</p>
+        <p class="attract-amount"><span>2.500</span>×</p>
+        <p class="attract-sub">TARUHAN!</p>
+        <p class="attract-cta">TEKAN UNTUK BERMAIN</p>
+      </div>
+    </div>
+
+    <button id="login-settings-btn" class="login-settings-btn" title="Pengaturan">&#9881;</button>
+    <div class="login-card">
+      <img class="login-skull" src="/assets/img/mariachi.png" alt="Mariachi">
+      <h1 class="login-title">CALAVERA RICHES</h1>
+      <p class="login-subtitle">Día de los Muertos &mdash; 1024 Ways</p>
+      <div class="login-field">
+        <label for="login-user">Username</label>
+        <input id="login-user" type="text" autocomplete="username" placeholder="admin">
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Password</label>
+        <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <p class="login-error" id="login-error"></p>
+      <button id="btn-login" class="login-btn">MASUK</button>
+      <p class="login-hint">Demo: <b>admin</b> / <b>admin123</b></p>
+    </div>
+  </div>
+
+  <div id="main-menu" class="hidden">
+    <img id="menu-bg" class="menu-bg" src="/assets/img/CalaveraRiches.png" alt="Calavera Riches">
+    <div class="menu-bg-overlay"></div>
+    <!-- Floating marigold petals (same atmospheric particles as login screen) -->
+    <div class="petals petals-menu">
+      <span class="petal" style="--l:6%;  --d:0s;   --t:13s; --r:160deg; --s:0.9;"></span>
+      <span class="petal" style="--l:16%; --d:3s;   --t:11s; --r:-180deg; --s:1.1;"></span>
+      <span class="petal" style="--l:26%; --d:5s;   --t:14s; --r:200deg; --s:0.75;"></span>
+      <span class="petal" style="--l:36%; --d:1.5s; --t:10s; --r:-160deg; --s:1.0;"></span>
+      <span class="petal" style="--l:46%; --d:7s;   --t:12s; --r:180deg; --s:0.85;"></span>
+      <span class="petal" style="--l:56%; --d:4s;   --t:15s; --r:-200deg; --s:1.05;"></span>
+      <span class="petal" style="--l:66%; --d:2s;   --t:11s; --r:160deg; --s:0.8;"></span>
+      <span class="petal" style="--l:76%; --d:6s;   --t:13s; --r:-180deg; --s:0.95;"></span>
+      <span class="petal" style="--l:86%; --d:8s;   --t:10s; --r:220deg; --s:0.7;"></span>
+      <span class="petal" style="--l:96%; --d:0.5s; --t:14s; --r:-150deg; --s:1.0;"></span>
+      <span class="petal" style="--l:11%; --d:9s;   --t:12s; --r:170deg; --s:0.9;"></span>
+      <span class="petal" style="--l:41%; --d:10s;  --t:11s; --r:-180deg; --s:0.65;"></span>
+      <span class="petal" style="--l:71%; --d:5.5s; --t:13s; --r:140deg; --s:1.0;"></span>
+      <span class="petal" style="--l:91%; --d:7.5s; --t:9s;  --r:-160deg; --s:0.85;"></span>
+    </div>
+    <button id="menu-settings" class="menu-corner-btn settings" title="Pengaturan">&#9881;</button>
+    <button id="menu-quit"     class="menu-corner-btn quit"     title="Keluar">&times;</button>
+    <div class="menu-content">
+      <div class="menu-logo">
+        <h1 class="menu-title">CALAVERA</h1>
+        <h1 class="menu-title menu-title-2">RICHES</h1>
+        <p class="menu-subtitle">BANDIT DARI ALAM BAKA</p>
+      </div>
+      <p class="menu-desc">
+        1024 cara menang dengan multiplier emas yang terus naik!<br>
+        Coffin scatter membawamu ke putaran gratis dengan multiplier mega.
+      </p>
+      <button id="menu-play" class="menu-btn primary">MULAI</button>
+      <button id="pwa-install-btn" class="menu-btn pwa-install hidden" title="Install ke layar utama">
+        <span class="menu-btn-icon">&#128241;</span>
+        <span>INSTALL APP</span>
+      </button>
+      <div class="menu-btn-row">
+        <button id="menu-paytable" class="menu-btn-mini" title="Tabel Bayaran &amp; Peraturan">
+          <span class="menu-btn-icon">&#128214;</span>
+          <span>PERATURAN</span>
+        </button>
+        <button id="menu-jackpot" class="menu-btn-mini" title="Total Hadiah Maksimum">
+          <span class="menu-btn-icon">&#128176;</span>
+          <span>JACKPOT</span>
+        </button>
+      </div>
+      <div class="menu-footer">
+        <span>v<span id="menu-version">1.0.0</span></span>
+        <span>·</span>
+        <span>© 2026 Calavera Riches</span>
+      </div>
+    </div>
+
+    <!-- JACKPOT info modal (styled in-game, replaces browser alert) -->
+    <div id="jackpot-modal" class="jackpot-modal hidden">
+      <div class="jackpot-card">
+        <button id="jackpot-close" class="jackpot-close" title="Tutup">&times;</button>
+        <div class="jackpot-icon">💰</div>
+        <h2 class="jackpot-title">JACKPOT TERTINGGI</h2>
+        <div class="jackpot-section">
+          <p class="jackpot-row"><span>Multiplier Base ladder:</span><b>×0 → ×50</b></p>
+          <p class="jackpot-sub">naik per kemenangan beruntun, reset saat kalah</p>
+        </div>
+        <div class="jackpot-section">
+          <p class="jackpot-row"><span>Multiplier Free Spin:</span><b>×0 → ×50</b></p>
+          <p class="jackpot-sub">naik per cascade, tidak reset selama bonus</p>
+        </div>
+        <div class="jackpot-section jackpot-highlight">
+          <p class="jackpot-mega-label">POTENSI MAKSIMUM</p>
+          <p class="jackpot-mega">2.500× TARUHAN</p>
+          <p class="jackpot-sub">Wild + cascade beruntun bisa lebih besar lagi!</p>
+        </div>
+        <button id="jackpot-ok" class="jackpot-ok-btn">SIAP MENANG!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Splash / loading screen — bridges menu → game with spinning mariachi + progress -->
+  <div id="splash-screen" class="hidden">
+    <div class="splash-bg-overlay"></div>
+    <div class="splash-content">
+      <img class="splash-skull" src="/assets/img/mariachi.png" alt="Loading">
+      <h2 class="splash-title">CALAVERA RICHES</h2>
+      <p class="splash-text">Mempersiapkan permainan<span class="splash-dots"></span></p>
+      <div class="splash-progress">
+        <div class="splash-progress-bar" id="splash-progress-bar"></div>
+      </div>
+      <p class="splash-progress-label" id="splash-progress-label">0%</p>
+    </div>
+  </div>
+
+  <div id="game-container">
+
+    <div id="hud-top">
+      <div class="header-frame"></div>
+
+      <div class="multiplier-row">
+        <div class="mult-badge" id="mult-left" style="opacity:0"><span class="mult-text"></span></div>
+        <div class="mult-badge center">
+          <div class="cross left"></div>
+          <div class="cross right"></div>
+          <div class="skull-emoji">&#x1F480;</div>
+          <span class="center-mult">&times;1</span>
+          <div class="sombrero"></div>
+        </div>
+        <div class="mult-badge" id="mult-right"><span class="mult-text">&times;2</span></div>
+      </div>
+
+      <div class="banner-ribbon">
+        <div class="ribbon-bg"></div>
+        <span class="banner-text">1,024 WAYS TO WIN!</span>
+      </div>
+    </div>
+
+    <div id="marquee-banner">
+      <div class="marquee-track">
+        <span class="marquee-msg">SIMBOL BERBINGKAI EMAS DIJAMIN DI PUTARAN GRATIS</span>
+        <span class="marquee-msg">3 <img class="marquee-icon" src="/assets/img/coffin.png" alt="scatter"> ATAU LEBIH MEMICU 12 ATAU LEBIH PUTARAN GRATIS!</span>
+        <span class="marquee-msg">MENANGKAN HINGGA 1024 CARA!</span>
+        <span class="marquee-msg">PERKALIAN MENINGKAT SETELAH SETIAP KEMENANGAN!</span>
+        <span class="marquee-msg">DAPATKAN <img class="marquee-icon" src="/assets/img/catrina.png" alt="wild"> DENGAN SIMBOL BERBINGKAI EMAS!</span>
+        <span class="marquee-msg">SIMBOL BERBINGKAI EMAS DIJAMIN DI PUTARAN GRATIS</span>
+        <span class="marquee-msg">3 <img class="marquee-icon" src="/assets/img/coffin.png" alt="scatter"> ATAU LEBIH MEMICU 12 ATAU LEBIH PUTARAN GRATIS!</span>
+        <span class="marquee-msg">MENANGKAN HINGGA 1024 CARA!</span>
+        <span class="marquee-msg">PERKALIAN MENINGKAT SETELAH SETIAP KEMENANGAN!</span>
+        <span class="marquee-msg">DAPATKAN <img class="marquee-icon" src="/assets/img/catrina.png" alt="wild"> DENGAN SIMBOL BERBINGKAI EMAS!</span>
+      </div>
+    </div>
+
+    <div id="reel-frame">
+      <div id="pixi-canvas"></div>
+    </div>
+
+    <div id="hud-bottom">
+      <div class="candle left">
+        <div class="flame"></div>
+        <div class="body"></div>
+        <div class="base"></div>
+      </div>
+      <div class="candle right">
+        <div class="flame"></div>
+        <div class="body"></div>
+        <div class="base"></div>
+      </div>
+
+      <button id="btn-buy-feature" class="buy-feature-btn" title="Beli Fitur">
+        <span class="bf-top">BELI</span>
+        <span class="bf-bottom">FITUR</span>
+      </button>
+
+      <div class="hud-display">
+        <div class="hud-item"><span class="icon">&#x1F4B0;</span><span id="balance">1.000.000</span></div>
+        <div class="hud-item"><span class="icon">&#x1F3AB;</span><span id="bet">400</span></div>
+        <div class="hud-item"><span class="icon">&#x1F3C6;</span><span id="win">0</span></div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-turbo" class="ctrl-btn"><span class="icon">&#9889;</span><label>TURBO</label></button>
+        <div class="picker-popup hidden" id="turbo-popup">
+          <div class="picker-title">TURBO</div>
+          <button class="picker-opt" data-turbo="0">OFF</button>
+          <button class="picker-opt" data-turbo="1">1×</button>
+          <button class="picker-opt" data-turbo="2">2×</button>
+          <button class="picker-opt" data-turbo="3">3×</button>
+          <button class="picker-opt" data-turbo="4">4×</button>
+          <button class="picker-opt" data-turbo="5">5×</button>
+        </div>
+        <button id="btn-bet-minus" class="ctrl-btn">&minus;</button>
+        <button id="btn-spin" class="spin-btn">
+          <svg viewBox="0 0 100 100" class="spin-rays" aria-hidden="true">
+            <g transform="translate(50 50)">
+              <!-- Narrow pointed rays (Wild Bandito sun-burst reference) -->
+              <polygon points="0,-3 -4,-44 0,-46 4,-44" fill="#5b1818" transform="rotate(0)" />
+              <polygon points="0,-3 -4,-44 0,-46 4,-44" fill="#5b1818" transform="rotate(90)" />
+              <polygon points="0,-3 -4,-44 0,-46 4,-44" fill="#5b1818" transform="rotate(180)" />
+              <polygon points="0,-3 -4,-44 0,-46 4,-44" fill="#5b1818" transform="rotate(270)" />
+              <polygon points="0,-3 -3,-28 0,-30 3,-28" fill="#5b1818" transform="rotate(45)" />
+              <polygon points="0,-3 -3,-28 0,-30 3,-28" fill="#5b1818" transform="rotate(135)" />
+              <polygon points="0,-3 -3,-28 0,-30 3,-28" fill="#5b1818" transform="rotate(225)" />
+              <polygon points="0,-3 -3,-28 0,-30 3,-28" fill="#5b1818" transform="rotate(315)" />
+            </g>
+          </svg>
+        </button>
+        <button id="btn-bet-plus" class="ctrl-btn">&plus;</button>
+        <button id="btn-auto" class="ctrl-btn"><span class="icon">&#9658;</span><label>AUTO</label></button>
+        <div class="picker-popup hidden" id="auto-popup">
+          <div class="picker-title">AUTO SPIN</div>
+          <button class="picker-opt" data-auto="10">10</button>
+          <button class="picker-opt" data-auto="20">20</button>
+          <button class="picker-opt" data-auto="30">30</button>
+          <button class="picker-opt" data-auto="40">40</button>
+          <button class="picker-opt" data-auto="50">50</button>
+          <button class="picker-opt" data-auto="0">&infin;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu button — opens full menu modal (Wild Bandito style) -->
+    <div class="utility-row">
+      <button id="btn-menu" class="util-btn" title="Menu">&#9776;</button>
+    </div>
+
+  </div>
+
+  <!-- MENU MODAL — full overlay with avatar + balance + 5 action buttons -->
+  <div id="menu-modal" class="menu-modal hidden">
+    <div class="menu-modal-content">
+      <button class="menu-modal-close" id="menu-modal-close" title="Tutup">&times;</button>
+      <div class="menu-avatar">
+        <div class="avatar-circle">&#x1F464;</div>
+      </div>
+      <div class="menu-balance-section">
+        <div class="balance-label">Dompet Uang Tunai</div>
+        <div class="balance-value" id="menu-balance-display">Rp 0,00</div>
+      </div>
+      <div class="menu-actions">
+        <button class="menu-action-btn" id="btn-sound" title="Suara">
+          <span class="action-icon">&#128266;</span>
+          <span class="action-label">Suara</span>
+        </button>
+        <button class="menu-action-btn" id="btn-info" title="Tabel Bayaran">
+          <span class="action-icon">&#128202;</span>
+          <span class="action-label">Tabel Bayaran</span>
+        </button>
+        <button class="menu-action-btn" id="btn-rules" title="Peraturan">
+          <span class="action-icon">&#8505;</span>
+          <span class="action-label">Peraturan</span>
+        </button>
+        <button class="menu-action-btn" id="btn-history" title="Riwayat">
+          <span class="action-icon">&#127942;</span>
+          <span class="action-label">Riwayat</span>
+        </button>
+        <button class="menu-action-btn" id="btn-logout" title="Keluar">
+          <span class="action-icon">&#x1F6AA;</span>
+          <span class="action-label">Keluar</span>
+        </button>
+      </div>
+      <!-- Hidden admin panel access (long-press or shift-click on avatar) -->
+      <button id="btn-admin" class="hidden-admin-trigger" title="Admin Panel">&#9881;</button>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="hidden">
+    <div class="admin-card">
+      <div class="admin-header">
+        <span class="admin-skull">&#x1F480;</span>
+        <h2 class="admin-title">PENGATURAN</h2>
+        <button class="admin-close" id="admin-close" title="Tutup">&times;</button>
+      </div>
+
+      <section class="admin-section">
+        <h3>🔊 Volume</h3>
+        <div class="vol-row">
+          <label>Master</label>
+          <input id="vol-master" type="range" min="0" max="100" value="100">
+          <span class="vol-val" id="vol-master-val">100%</span>
+        </div>
+        <div class="vol-row">
+          <label>SFX</label>
+          <input id="vol-sfx" type="range" min="0" max="100" value="50">
+          <span class="vol-val" id="vol-sfx-val">50%</span>
+        </div>
+        <div class="vol-row">
+          <label>Sound</label>
+          <button id="vol-toggle" class="admin-btn ghost">ON</button>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h3>🎯 Tingkat Kesulitan</h3>
+        <div class="diff-grid">
+          <button class="diff-card" data-diff="EASY">
+            <span class="diff-icon">😊</span>
+            <span class="diff-name">EASY</span>
+            <span class="diff-desc">Sering menang, scatter & wild lebih sering</span>
+          </button>
+          <button class="diff-card" data-diff="NORMAL">
+            <span class="diff-icon">⚖️</span>
+            <span class="diff-name">NORMAL</span>
+            <span class="diff-desc">Peluang seimbang (default)</span>
+          </button>
+          <button class="diff-card" data-diff="HARD">
+            <span class="diff-icon">🔥</span>
+            <span class="diff-name">HARD</span>
+            <span class="diff-desc">Win lebih jarang, simbol rendah dominan</span>
+          </button>
+          <button class="diff-card" data-diff="VERY_HARD">
+            <span class="diff-icon">💀</span>
+            <span class="diff-name">VERY HARD</span>
+            <span class="diff-desc">Wild & scatter sangat langka — untuk pemberani</span>
+          </button>
+        </div>
+        <p class="diff-status">Saat ini: <b id="diff-current">NORMAL</b></p>
+      </section>
+
+      <section class="admin-section">
+        <h3>🤖 Auto Spin</h3>
+        <div class="auto-row">
+          <label>Jumlah</label>
+          <div class="auto-count" id="auto-count">
+            <button data-count="10">10</button>
+            <button data-count="25">25</button>
+            <button data-count="50">50</button>
+            <button data-count="100">100</button>
+            <button data-count="0">∞</button>
+          </div>
+        </div>
+        <div class="auto-row check">
+          <label><input type="checkbox" id="auto-stop-fs"> Stop saat Free Spin trigger</label>
+        </div>
+        <div class="auto-row check">
+          <label><input type="checkbox" id="auto-stop-big"> Stop saat Big Win+ (≥ 5× bet)</label>
+        </div>
+        <div class="auto-row check">
+          <label><input type="checkbox" id="auto-stop-win-on"> Stop kalau single win ≥</label>
+          <input id="auto-stop-win-x" type="number" min="0" max="1000" step="1" value="0" style="width:60px"> × bet
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h3>ℹ️ Tentang Game</h3>
+        <div class="about-block">
+          <div class="about-title">CALAVERA RICHES</div>
+          <div class="about-sub">Día de los Muertos &mdash; 1024 Ways Slot</div>
+          <div class="about-meta">
+            <span>Versi <b id="about-version">1.0.0</b></span>
+            <span>Build <b id="about-date">—</b></span>
+          </div>
+          <ul class="about-list">
+            <li><b>Mekanik:</b> 1024 ways, RTP 96.5%, multiplier ladder 0..50</li>
+            <li><b>Free Spin:</b> 3/4/5 scatter → 8/15/30 spins, multiplier step +2 cap ×50</li>
+            <li><b>Tech:</b> Vite 5 · PixiJS 7.4.2 · GSAP 3.12 · Web Audio</li>
+            <li><b>Theme:</b> Mexican Day of the Dead (Catrina, mariachi, marigold)</li>
+          </ul>
+          <div class="about-credits">© 2026 Calavera Riches &middot; All art generated original (Pollinations Flux).</div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h3>🔒 Dev Tools</h3>
+        <div id="dev-locked" class="dev-lock">
+          <p class="reset-info">Area khusus admin (testing animasi & game state). Masukkan password untuk membuka.</p>
+          <div class="admin-row">
+            <input id="dev-pass" type="password" placeholder="Password admin" autocomplete="off">
+            <button id="dev-unlock" class="admin-btn">UNLOCK</button>
+          </div>
+          <p class="dev-pass-err" id="dev-pass-err"></p>
+        </div>
+        <div id="dev-tools-wrap" class="hidden">
+          <h3 class="dev-toggle" id="dev-toggle">🛠️ Dev Tools (unlocked) <span class="dev-caret">▾</span></h3>
+          <div class="dev-tools" id="dev-tools">
+            <div class="admin-stats" style="margin-bottom:12px">
+              <div><span>Spins:</span><b id="adm-spins">0</b></div>
+              <div><span>Total Bet:</span><b id="adm-totalbet">0</b></div>
+              <div><span>Total Win:</span><b id="adm-totalwin">0</b></div>
+              <div><span>Net P/L:</span><b id="adm-netpl">0</b></div>
+              <div><span>Mult:</span><b id="adm-curmult">×1</b></div>
+              <div><span>Free Spin:</span><b id="adm-fsactive">OFF</b></div>
+            </div>
+            <div class="admin-row" style="margin-bottom:10px">
+              <input id="adm-balance-input" type="number" placeholder="Set saldo..." min="0" step="100">
+              <button id="adm-balance-set" class="admin-btn">SET</button>
+              <button id="adm-balance-reset" class="admin-btn ghost">Reset</button>
+            </div>
+            <div class="admin-row wrap">
+              <button id="adm-force-big"  class="admin-btn">BIG</button>
+              <button id="adm-force-mega" class="admin-btn">MEGA</button>
+              <button id="adm-force-epic" class="admin-btn">EPIC</button>
+              <button id="adm-force-leg"  class="admin-btn legendary">LEGENDARY</button>
+              <button id="adm-force-fs3"  class="admin-btn fs">FS×3</button>
+              <button id="adm-force-fs4"  class="admin-btn fs">FS×4</button>
+              <button id="adm-force-fs5"  class="admin-btn fs">FS×5</button>
+              <button id="adm-reset-mult" class="admin-btn ghost">Reset Mult</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h3>🗑️ Reset Game</h3>
+        <p class="reset-info">Hapus semua progress, stats, dan pengaturan. Saldo kembali ke 1.000.000. Login tetap tersimpan.</p>
+        <button id="btn-reset-all" class="admin-btn danger">RESET SEMUA DATA</button>
+      </section>
+
+    </div>
+  </div>
+
+  <div id="info-modal" class="hidden">
+    <div class="info-card">
+      <div class="info-header">
+        <button id="info-back" class="info-back" title="Kembali">&larr;</button>
+        <h2 class="info-title" id="info-title">Tabel Bayaran</h2>
+        <span class="info-spacer"></span>
+      </div>
+      <div class="info-body" id="info-body"></div>
+      <!-- Bottom nav — same 5 buttons as menu modal -->
+      <div class="info-tabs">
+        <button class="info-tab" id="info-tab-sound">
+          <span class="tab-icon">&#128266;</span>
+          <span>Suara</span>
+        </button>
+        <button class="info-tab" data-tab="paytable">
+          <span class="tab-icon">&#128202;</span>
+          <span>Tabel Bayaran</span>
+        </button>
+        <button class="info-tab" data-tab="rules">
+          <span class="tab-icon">&#8505;</span>
+          <span>Peraturan</span>
+        </button>
+        <button class="info-tab" id="info-tab-history">
+          <span class="tab-icon">&#127942;</span>
+          <span>Riwayat</span>
+        </button>
+        <button class="info-tab" id="info-tab-exit">
+          <span class="tab-icon">&#x1F6AA;</span>
+          <span>Keluar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="buy-modal" class="hidden">
+    <div class="buy-card">
+      <h2 class="buy-title">BELI FITUR</h2>
+      <div class="buy-cost-wrap">
+        <div class="buy-cost-label">BIAYA</div>
+        <div class="buy-cost-amount" id="buy-cost-amount">0</div>
+      </div>
+      <p class="buy-desc">
+        Pilih "MULAI" untuk memicu Fitur Putaran Gratis pada besaran taruhan saat ini
+      </p>
+      <div class="buy-actions">
+        <button id="buy-cancel" class="buy-btn cancel">BATALKAN</button>
+        <button id="buy-start" class="buy-btn start">MULAI</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
