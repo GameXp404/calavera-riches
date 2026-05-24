@@ -1698,7 +1698,31 @@ function setupMainMenuUI() {
   });
 }
 
+// JS-based game-container scale: works on ALL mobile browsers (Samsung Browser,
+// older Chrome Android, etc) where CSS calc(min(viewport units)) might fail silently.
+// Computes scale based on viewport dimensions and sets CSS variable --game-scale.
+function updateGameContainerScale() {
+  const designW = 577;
+  const designH = 950;
+  const margin = 20;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scaleW = (vw - margin) / designW;
+  const scaleH = (vh - margin) / designH;
+  const scale = Math.min(scaleW, scaleH);
+  document.documentElement.style.setProperty('--game-scale', scale.toFixed(4));
+}
+// Run on load + every resize + orientation change
+window.addEventListener('resize', updateGameContainerScale);
+window.addEventListener('orientationchange', updateGameContainerScale);
+// Initial call ASAP (before DOM load) and again after load to handle browser chrome
+updateGameContainerScale();
+document.addEventListener('DOMContentLoaded', updateGameContainerScale);
+
 window.addEventListener('load', () => {
+  // Ensure scale is correct after full load (URL bar may have collapsed)
+  updateGameContainerScale();
+  setTimeout(updateGameContainerScale, 100);
   // 1. Preload persisted settings so panel reflects them before any binding
   Game.prebootSettings();
   // 2. Wire admin panel listeners (safe — defensive checks for non-init state)

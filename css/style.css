@@ -2232,11 +2232,10 @@ body {
 }
 
 #game-container {
-  /* TRANSFORM-SCALE APPROACH: container fixed 577×950px (design size),
-     seluruh kontennya di-scale via CSS transform agar fit viewport.
-     Children (multiplier badge, marquee, FS badge) tetap pakai posisi
-     absolute pixel — ikut scale otomatis. Pakai 100dvh (dynamic viewport)
-     supaya mobile URL bar tidak salah hitung tinggi. */
+  /* Container fixed 577×950px (design size). Scale dihitung via JS dan
+     diset ke CSS variable --game-scale. JS approach lebih reliable di SEMUA
+     mobile browser dibanding CSS calc(min(...)) yang kadang gagal di Samsung
+     Browser / older Chrome Android. */
   width: 577px;
   height: 950px;
   position: fixed;
@@ -2248,17 +2247,10 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.7));
-  transform: translate(-50%, -50%) scale(min(calc((100dvh - 20px) / 950), calc((100vw - 20px) / 577)));
+  transform: translate(-50%, -50%) scale(var(--game-scale, 0.5));
   transform-origin: center center;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-}
-
-/* Fallback for browsers without 100dvh (Chrome <108, Safari <15.4) */
-@supports not (height: 100dvh) {
-  #game-container {
-    transform: translate(-50%, -50%) scale(min(calc((100vh - 20px) / 950), calc((100vw - 20px) / 577)));
-  }
 }
 
 /* Mobile / touch device optimizations */
