@@ -2943,6 +2943,23 @@ button, .menu-action-btn, .picker-opt, .ctrl-btn, .util-btn, .spin-btn {
   }
   /* Snappier touch response (no 100ms delay) */
   body { touch-action: manipulation; }
+
+  /* PERF: STOP heavy background animations on mobile (huge GPU saving).
+     Petals, marquee, button shimmers etc cause constant compositor work. */
+  .petal, .petals { display: none !important; }
+  .marquee-track { animation: none !important; }
+  .spin-btn::before { animation: none !important; }   /* spin button shimmer */
+  .mult-badge.center { animation: none !important; }  /* multiplier badge breathe */
+  .freespin-badge { animation: none !important; }
+  #balance.balance-up { animation: none !important; } /* balance flash */
+  .pwa-install { animation: none !important; }
+  .splash-skull { animation: none !important; }
+  .splash-title { animation: none !important; }
+  .splash-progress-bar::after { animation: none !important; }
+  /* Reduce blur filters (very GPU heavy on mobile) */
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  /* Disable expensive box-shadow filters on non-critical elements */
+  .menu-btn, .menu-btn-mini { box-shadow: 0 2px 4px rgba(0,0,0,0.4) !important; }
 }
 
 /* ============ HUD COUNTER POLISH ============ */

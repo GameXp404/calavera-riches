@@ -137,10 +137,28 @@ const Game = {
     const w = Math.max(rect.width, 100);
     const h = Math.max(rect.height, 100);
 
+    // PERF: Detect mobile/touch device to apply aggressive optimization.
+    //   - PIXI resolution capped: mobile devices often have devicePixelRatio 2-3,
+    //     which means PIXI renders at 4-9x more pixels. Cap to 1.0 on mobile
+    //     for big FPS gain. Slight quality loss is acceptable for smooth gameplay.
+    //   - antialias disabled on mobile (GPU heavy filter).
+    const isMobile = (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches)
+      || ((navigator?.maxTouchPoints || 0) > 0 && window.innerWidth < 900);
+    const dpr = window.devicePixelRatio || 1;
+    const pixiResolution = isMobile ? 1.0 : Math.min(dpr, 2);
+    this._isMobile = isMobile;
+
     this.app = new PIXI.Application({
-      width: w, height: h, backgroundAlpha: 0, antialias: true,
-      resolution: window.devicePixelRatio || 1, autoDensity: true,
+      width: w, height: h, backgroundAlpha: 0,
+      antialias: !isMobile,        // disable AA on mobile (big perf win)
+      resolution: pixiResolution,
+      autoDensity: true,
+      powerPreference: 'high-performance',
     });
+    // Cap FPS to 30 on mobile to save battery + reduce thermal throttling
+    if (isMobile) {
+      this.app.ticker.maxFPS = 30;
+    }
     canvasParent.appendChild(this.app.view);
 
     await this.preloadAssets();
