@@ -1419,22 +1419,39 @@ const Game = {
   },
 
   handleResize() {
-    // Guard: defer re-init if reels are mid-spin/cascade or celebration is running.
-    // Otherwise stage.removeChildren() destroys GSAP tween targets mid-animation.
-    if (Reels.spinning || this._celebrating) {
-      // Re-render renderer size only (cheap, no DOM children destroy)
-      const cp = document.getElementById('pixi-canvas');
-      this.app.renderer.resize(cp.clientWidth, cp.clientHeight);
-      // Defer full re-init by 200ms; if still busy, defer again
-      clearTimeout(this._resizeRetryTimer);
-      this._resizeRetryTimer = setTimeout(() => this.handleResize(), 200);
-      return;
-    }
+    // DEBOUNCE: setiap resize event hanya update renderer size dulu (cheap, no rebuild).
+    // Full Reels.init rebuild ditunda 300ms setelah user STOP resize.
+    // Tujuan: hilangkan "logos berubah-ubah" saat user drag window edge.
     const cp = document.getElementById('pixi-canvas');
-    this.app.renderer.resize(cp.clientWidth, cp.clientHeight);
-    this.app.stage.removeChildren();
-    Reels.init(this.app, this.app.stage);
-    if (FreeSpin.active) Reels.enableFreeSpinMode(true);
+    const w = cp.clientWidth, h = cp.clientHeight;
+
+    // 1. Immediate: just resize the renderer (cheap, no sprite destroy)
+    this.app.renderer.resize(w, h);
+
+    // 2. Reposition reelContainer center without rebuilding (sprites stay)
+    if (Reels.reelContainer && Reels.symbolSize) {
+      const gridW = Reels.symbolSize * 5;
+      const gridH = Reels.symbolSize * 4;
+      Reels.reelContainer.x = (w - gridW) / 2;
+      Reels.reelContainer.y = (h - gridH) / 2;
+    }
+
+    // 3. Debounce full rebuild — only fires AFTER user stops dragging (300ms idle).
+    //    If user is mid-spin/celebration, defer further until safe.
+    clearTimeout(this._resizeDebounce);
+    this._resizeDebounce = setTimeout(() => {
+      if (Reels.spinning || this._celebrating) {
+        // Try again after busy state ends
+        this._resizeDebounce = setTimeout(() => this.handleResize(), 300);
+        return;
+      }
+      // Final rebuild at stable viewport size
+      const cp2 = document.getElementById('pixi-canvas');
+      this.app.renderer.resize(cp2.clientWidth, cp2.clientHeight);
+      this.app.stage.removeChildren();
+      Reels.init(this.app, this.app.stage);
+      if (FreeSpin.active) Reels.enableFreeSpinMode(true);
+    }, 300);
   },
 };
 
