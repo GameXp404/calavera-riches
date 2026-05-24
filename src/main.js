@@ -162,6 +162,10 @@ const Game = {
     // Start ambient game music after init
     Audio.playGameMusic?.();
 
+    // Simpan ukuran canvas saat init sebagai "virtual reference" — semua resize
+    // berikutnya akan scale relatif ke ukuran ini, BUKAN rebuild sprites.
+    this._virtualSize = { w, h };
+
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.handleResize());
       ro.observe(canvasParent);
@@ -1419,39 +1423,31 @@ const Game = {
   },
 
   handleResize() {
-    // DEBOUNCE: setiap resize event hanya update renderer size dulu (cheap, no rebuild).
-    // Full Reels.init rebuild ditunda 300ms setelah user STOP resize.
-    // Tujuan: hilangkan "logos berubah-ubah" saat user drag window edge.
+    // FIXED VIRTUAL CANVAS APPROACH:
+    // Game di-init SEKALI di awal pada ukuran viewport saat itu (initial size).
+    // Pada resize, kita TIDAK rebuild apapun — cuma resize renderer + scale stage
+    // proporsional supaya content yang udah ter-render fit ke viewport baru.
+    // Hasil: simbol TIDAK pernah berubah bentuk/posisi internal, cuma di-zoom in/out.
     const cp = document.getElementById('pixi-canvas');
     const w = cp.clientWidth, h = cp.clientHeight;
 
-    // 1. Immediate: just resize the renderer (cheap, no sprite destroy)
+    // Resize renderer ke ukuran viewport sekarang
     this.app.renderer.resize(w, h);
 
-    // 2. Reposition reelContainer center without rebuilding (sprites stay)
-    if (Reels.reelContainer && Reels.symbolSize) {
-      const gridW = Reels.symbolSize * 5;
-      const gridH = Reels.symbolSize * 4;
-      Reels.reelContainer.x = (w - gridW) / 2;
-      Reels.reelContainer.y = (h - gridH) / 2;
+    // Simpan ukuran initial pertama kali (sebagai virtual reference)
+    if (!this._virtualSize) {
+      this._virtualSize = { w, h };
+      return; // first call, no scale needed
     }
+    const { w: vw, h: vh } = this._virtualSize;
 
-    // 3. Debounce full rebuild — only fires AFTER user stops dragging (300ms idle).
-    //    If user is mid-spin/celebration, defer further until safe.
-    clearTimeout(this._resizeDebounce);
-    this._resizeDebounce = setTimeout(() => {
-      if (Reels.spinning || this._celebrating) {
-        // Try again after busy state ends
-        this._resizeDebounce = setTimeout(() => this.handleResize(), 300);
-        return;
-      }
-      // Final rebuild at stable viewport size
-      const cp2 = document.getElementById('pixi-canvas');
-      this.app.renderer.resize(cp2.clientWidth, cp2.clientHeight);
-      this.app.stage.removeChildren();
-      Reels.init(this.app, this.app.stage);
-      if (FreeSpin.active) Reels.enableFreeSpinMode(true);
-    }, 300);
+    // Hitung scale yang fit viewport while maintaining aspect ratio
+    const scale = Math.min(w / vw, h / vh);
+    this.app.stage.scale.set(scale);
+
+    // Center the scaled stage in new viewport
+    this.app.stage.x = (w - vw * scale) / 2;
+    this.app.stage.y = (h - vh * scale) / 2;
   },
 };
 
