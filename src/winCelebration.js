@@ -168,12 +168,15 @@ export const WinCelebration = {
     label.anchor.set(0.5);
     const tw = label.texture.orig ? label.texture.orig.width : label.texture.width;
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
-    // CONTAIN viewport: Math.min = image fully visible.
-    // Margin 0.82 — supaya saat entrance overshoot (1.18x scale pop) gambar tetap
-    // dalam viewport (0.82 * 1.18 = 0.968 < 1.0 batas viewport).
-    // Image sources landscape (1460x1078) → minimum dimension dictates scale on portrait mobile.
+    // Safe area = bagian reel viewport yang TIDAK ketutup bandit.png frame.
+    // Bandit.png punya wooden side panels yang eat ~15% lebar di kiri/kanan,
+    // dan top arch + bottom HUD eat ~25-30% tinggi. Jadi visible area:
+    //   safeW ~ 70% W,  safeH ~ 55% H
+    // Image akan fit dalam safe area + sedikit margin biar gak mepet edge.
+    const safeW = W * 0.70;
+    const safeH = H * 0.55;
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.min(W / tw, H / th) * 0.82
+      ? Math.min(safeW / tw, safeH / th) * 0.95
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {
@@ -277,7 +280,8 @@ export const WinCelebration = {
       // F3 Label entrance: simultaneous rotation + drop + scale pop (scaled to image fit)
       .to(label, { rotation: 0, duration: 0.75, ease: 'power3.out' }, '-=0.3')
       .to(label, { y: labelSettleY, duration: 0.6, ease: 'back.out(1.8)' }, '<')
-      .to(label.scale, { x: labelTargetScale * 1.18, y: labelTargetScale * 1.18, duration: 0.55, ease: 'back.out(2.5)' }, '<')
+      // Reduced overshoot 1.18 → 1.08 so image doesn't overflow safe area at peak
+      .to(label.scale, { x: labelTargetScale * 1.08, y: labelTargetScale * 1.08, duration: 0.55, ease: 'back.out(2.5)' }, '<')
       .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.25, ease: 'power2.out' })
       // F3 Wobble settle — brief rotation oscillation before holding still
       .to(label, { rotation: wobbleAmp, duration: 0.12, ease: 'sine.inOut' })
