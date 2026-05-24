@@ -73,9 +73,19 @@ const Game = {
     if (fsBadge) fsBadge.remove();
   },
 
+  // PER-USER STORAGE: each player (different username) has own keys:
+  //   calavera_<username>_auto    — auto-spin config
+  //   calavera_<username>_player  — turbo, betIdx, balance
+  // Username comes from localStorage[LOGIN_KEY] set during login.
+  _getUser() {
+    const u = (typeof localStorage !== 'undefined' && localStorage.getItem('calavera_user')) || 'guest';
+    return u.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 24) || 'guest';
+  },
+
   loadAutoConfig() {
     try {
-      const s = JSON.parse(localStorage.getItem('calavera_auto') || '{}');
+      const key = `calavera_${this._getUser()}_auto`;
+      const s = JSON.parse(localStorage.getItem(key) || '{}');
       if (typeof s.count === 'number')             this.state.autoConfig.count = s.count;
       if (typeof s.stopOnFreeSpin === 'boolean')   this.state.autoConfig.stopOnFreeSpin = s.stopOnFreeSpin;
       if (typeof s.stopOnBigWin === 'boolean')     this.state.autoConfig.stopOnBigWin = s.stopOnBigWin;
@@ -83,25 +93,32 @@ const Game = {
     } catch (_) {}
   },
   saveAutoConfig() {
-    try { localStorage.setItem('calavera_auto', JSON.stringify(this.state.autoConfig)); } catch (_) {}
+    try { localStorage.setItem(`calavera_${this._getUser()}_auto`, JSON.stringify(this.state.autoConfig)); } catch (_) {}
   },
 
-  // Persist turbo level + bet level so player preferences survive refresh.
+  // Persist turbo level + bet level + balance so player preferences + saldo survive refresh.
+  // Per-user keyed — different usernames keep separate balances.
   loadPlayerPrefs() {
     try {
-      const p = JSON.parse(localStorage.getItem('calavera_player') || '{}');
+      const key = `calavera_${this._getUser()}_player`;
+      const p = JSON.parse(localStorage.getItem(key) || '{}');
       if (typeof p.turbo === 'number') this.state.turbo = Math.max(0, Math.min(5, p.turbo));
       if (typeof p.betIdx === 'number' && p.betIdx >= 0 && p.betIdx < GAME_CONFIG.BET_LEVELS.length) {
         this.state.betIdx = p.betIdx;
         this.state.bet = GAME_CONFIG.BET_LEVELS[p.betIdx];
       }
+      if (typeof p.balance === 'number' && p.balance >= 0) {
+        this.state.balance = p.balance;
+      }
     } catch (_) {}
   },
   savePlayerPrefs() {
     try {
-      localStorage.setItem('calavera_player', JSON.stringify({
+      const key = `calavera_${this._getUser()}_player`;
+      localStorage.setItem(key, JSON.stringify({
         turbo: this.state.turbo,
         betIdx: this.state.betIdx,
+        balance: this.state.balance,
       }));
     } catch (_) {}
   },
@@ -506,6 +523,7 @@ const Game = {
       this.state.balance -= this.state.bet;
       this.state.stats.spins += 1;
       this.state.stats.totalBet += this.state.bet;
+      this.savePlayerPrefs(); // persist new balance (bet deducted)
     }
     document.getElementById('win').textContent = '0';
     this.updateHUD();
@@ -637,6 +655,7 @@ const Game = {
       this.state.balance += multipliedWin;
       if (multipliedWin > 0) this.state.stats.totalWin += multipliedWin;
       this.updateHUD();
+      this.savePlayerPrefs(); // persist balance after FS trigger win
       // E3: switch music — fade out base game music, start dramatic FS music
       Audio.stopGameMusic?.(900);
       Audio.freeSpinTrigger();
@@ -697,6 +716,7 @@ const Game = {
           this.state.balance += multipliedWin;
           this.state.stats.totalWin += multipliedWin;
           this.updateHUD();
+          this.savePlayerPrefs(); // persist new balance after win
           await finishSpin();
           resolve();
         };
@@ -1419,6 +1439,10 @@ const Game = {
 };
 
 const LOGIN_KEY = 'calavera_user';
+// OPEN LOGIN MODE: Any non-empty username + any password accepted.
+// Each unique username gets its own balance + settings (stored per-user
+// via localStorage keys keyed by username).
+// VALID_USER/VALID_PASS kept ONLY for the hidden admin dev panel login.
 const VALID_USER = 'admin';
 const VALID_PASS = 'admin123';
 
@@ -1560,17 +1584,19 @@ function attemptLogin() {
   const userEl = document.getElementById('login-user');
   const passEl = document.getElementById('login-pass');
   const errEl = document.getElementById('login-error');
-  const user = userEl.value.trim();
-  const pass = passEl.value;
-  if (user === VALID_USER && pass === VALID_PASS) {
-    localStorage.setItem(LOGIN_KEY, user);
-    errEl.textContent = '';
-    hideLoginAndStart();
-  } else {
-    errEl.textContent = 'Username atau password salah!';
-    passEl.value = '';
-    passEl.focus();
+  let user = userEl.value.trim();
+  // OPEN LOGIN: accept any non-empty username; password ignored entirely.
+  // Sanitize username: alphanumeric + dash/underscore only, max 24 chars.
+  user = user.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 24);
+  if (!user) {
+    errEl.textContent = 'Username tidak boleh kosong!';
+    userEl.focus();
+    return;
   }
+  // Save active user — game state will key off this for per-user balance/settings
+  localStorage.setItem(LOGIN_KEY, user);
+  errEl.textContent = '';
+  hideLoginAndStart();
 }
 function setupLoginUI() {
   document.getElementById('btn-login').addEventListener('click', attemptLogin);
@@ -1650,7 +1676,9 @@ window.addEventListener('load', () => {
   setupLoginUI();
   setupMainMenuUI();
   setupLoginAttract();
-  if (localStorage.getItem(LOGIN_KEY) === VALID_USER) {
+  // OPEN LOGIN: any saved username = auto-resume to main menu
+  const savedUser = localStorage.getItem(LOGIN_KEY);
+  if (savedUser && savedUser.trim()) {
     showMainMenu();
   } else {
     showLogin();
