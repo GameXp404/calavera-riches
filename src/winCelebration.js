@@ -168,15 +168,14 @@ export const WinCelebration = {
     label.anchor.set(0.5);
     const tw = label.texture.orig ? label.texture.orig.width : label.texture.width;
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
-    // Safe area = bagian reel viewport yang TIDAK ketutup bandit.png frame.
-    // Bandit.png punya wooden side panels yang eat ~15% lebar di kiri/kanan,
-    // dan top arch + bottom HUD eat ~25-30% tinggi. Jadi visible area:
-    //   safeW ~ 70% W,  safeH ~ 55% H
-    // Image akan fit dalam safe area + sedikit margin biar gak mepet edge.
-    const safeW = W * 0.70;
-    const safeH = H * 0.55;
+    // HARD CAP: image max 55% width × 38% height of canvas (very conservative).
+    // Account for bandit.png frame eating ~15% on each side + top arch + bottom HUD.
+    // Plus NO entrance overshoot — image goes straight to settle size.
+    // Tested: works on mobile portrait 350x576 → image 192x142, well within safe area.
+    const maxW = W * 0.55;
+    const maxH = H * 0.38;
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.min(safeW / tw, safeH / th) * 0.95
+      ? Math.min(maxW / tw, maxH / th)
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {
@@ -280,9 +279,8 @@ export const WinCelebration = {
       // F3 Label entrance: simultaneous rotation + drop + scale pop (scaled to image fit)
       .to(label, { rotation: 0, duration: 0.75, ease: 'power3.out' }, '-=0.3')
       .to(label, { y: labelSettleY, duration: 0.6, ease: 'back.out(1.8)' }, '<')
-      // Reduced overshoot 1.18 → 1.08 so image doesn't overflow safe area at peak
-      .to(label.scale, { x: labelTargetScale * 1.08, y: labelTargetScale * 1.08, duration: 0.55, ease: 'back.out(2.5)' }, '<')
-      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.25, ease: 'power2.out' })
+      // NO overshoot — image goes straight to settle size to guarantee no overflow
+      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.55, ease: 'back.out(2.5)' }, '<')
       // F3 Wobble settle — brief rotation oscillation before holding still
       .to(label, { rotation: wobbleAmp, duration: 0.12, ease: 'sine.inOut' })
       .to(label, { rotation: -wobbleAmp * 0.65, duration: 0.13, ease: 'sine.inOut' })
