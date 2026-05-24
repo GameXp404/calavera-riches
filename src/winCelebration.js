@@ -168,11 +168,12 @@ export const WinCelebration = {
     label.anchor.set(0.5);
     const tw = label.texture.orig ? label.texture.orig.width : label.texture.width;
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
-    // CONTAIN viewport (Math.min — image fully visible, may letterbox edges).
-    // Pakai 0.92 multiplier supaya ada sedikit margin biar gak terlalu mepet ke edge.
-    // Sebelumnya: Math.max = COVER (crop), tapi user complain BIG WIN ke-crop di mobile.
+    // CONTAIN viewport: Math.min = image fully visible.
+    // Margin 0.82 — supaya saat entrance overshoot (1.18x scale pop) gambar tetap
+    // dalam viewport (0.82 * 1.18 = 0.968 < 1.0 batas viewport).
+    // Image sources landscape (1460x1078) → minimum dimension dictates scale on portrait mobile.
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.min(W / tw, H / th) * 0.92
+      ? Math.min(W / tw, H / th) * 0.82
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {
