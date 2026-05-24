@@ -2232,22 +2232,33 @@ body {
 }
 
 #game-container {
-  width: 577px;
-  height: 950px;
+  /* RESPONSIVE LAYOUT using CSS aspect-ratio (more reliable than transform-scale on mobile).
+     Container maintains 577:950 ratio and fits within viewport on all device sizes.
+     Uses 100dvh (dynamic viewport height) for proper mobile browser chrome handling. */
   position: fixed;
   top: 50%;
   left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, calc((100dvh - 20px) * 577 / 950));
+  aspect-ratio: 577 / 950;
+  max-height: calc(100dvh - 20px);
   z-index: 1;
   background-image: url('/assets/img/bandit.png');
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.7));
-  transform: translate(-50%, -50%) scale(min(calc((100vh - 20px) / 950px), calc((100vw - 20px) / 577px)));
-  transform-origin: center center;
   /* Mobile: prevent text selection + double-tap zoom on buttons */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* Fallback for browsers without 100dvh (older Chrome/Safari) */
+@supports not (height: 100dvh) {
+  #game-container {
+    width: min(100vw, calc((100vh - 20px) * 577 / 950));
+    max-height: calc(100vh - 20px);
+  }
 }
 
 /* Mobile / touch device optimizations */
