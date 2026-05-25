@@ -491,6 +491,10 @@ const Game = {
       this.state.balance += amount;
       this.state.stats.totalWin += amount;
       this.updateHUD();
+      if (tier === 'LEGENDARY')    Audio.winLegendary?.();
+      else if (tier === 'EPIC')    Audio.winEpic?.();
+      else                          Audio.winBig?.();
+      setTimeout(() => Audio.playVoice?.(tier), 350);
       try {
         WinCelebration.play(tier, amount, this.app, this.app.stage, () => refresh());
       } catch (e) { console.error(e); }
