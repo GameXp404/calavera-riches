@@ -137,36 +137,10 @@ const Game = {
     const w = Math.max(rect.width, 100);
     const h = Math.max(rect.height, 100);
 
-    // DEVICE TIER DETECTION: Adaptasi performa untuk berbagai HP.
-    // Tier LOW: Samsung A06, A05, Redmi 12C, Infinix Hot (4GB RAM, MediaTek)
-    // Tier MID: Samsung A14/A24/A34, Redmi Note 11/12, Oppo A78
-    // Tier HIGH: Samsung S22+, iPhone 13+, Xiaomi 13+
-    // Tier PC: Desktop (no touch)
-    const detectDeviceTier = () => {
-      const hasTouch = (navigator?.maxTouchPoints || 0) > 0;
-      const isMobileViewport = window.innerWidth < 900;
-      const isMobile = (window.matchMedia?.('(hover: none) and (pointer: coarse)').matches) || (hasTouch && isMobileViewport);
-      if (!isMobile) return 'pc';
-      // Mobile device — categorize by hardware
-      const cores = navigator.hardwareConcurrency || 4;
-      const ram = navigator.deviceMemory || 4;   // GB (only Chrome supports)
-      const ua = (navigator.userAgent || '').toLowerCase();
-      // Samsung A06, A05, A04 budget series → LOW
-      const isBudgetSamsung = /sm-a06|sm-a05|sm-a04|sm-a03/i.test(navigator.userAgent);
-      // MediaTek = mostly budget
-      const isMediatek = /mt67|mt68|mediatek|helio/i.test(ua);
-      // Low-end heuristic
-      if (isBudgetSamsung || ram <= 3 || cores <= 4 || isMediatek) return 'low';
-      // High-end heuristic
-      if (ram >= 8 && cores >= 8) return 'high';
-      return 'mid';
-    };
-    const tier = detectDeviceTier();
+    // Tier already detected at load time (lihat detectDeviceTier di bawah file)
+    const tier = window.__DEVICE_TIER__ || 'pc';
     this._deviceTier = tier;
     this._isMobile = tier !== 'pc';
-    // Add CSS class for tiered styling
-    document.documentElement.classList.add(`tier-${tier}`);
-    if (this._isMobile) document.documentElement.classList.add('is-mobile');
 
     // Per-tier PIXI config:
     const dpr = window.devicePixelRatio || 1;
@@ -1725,6 +1699,38 @@ function setupMainMenuUI() {
     if (e.target === jackpotModal) jackpotCloseModal();
   });
 }
+
+// DEVICE TIER DETECTION (runs at script load, BEFORE Game.init).
+// Set CSS class on <html> so styles work even on login screen / before game opens.
+// Tier LOW:  Samsung A06/A05/A04, Redmi 12C, Infinix Hot (4GB RAM, MediaTek)
+// Tier MID:  Samsung A14/A24/A34, Redmi Note 11/12, Oppo A78
+// Tier HIGH: Samsung S22+, iPhone 13+, Xiaomi 13+
+// Tier PC:   Desktop (no touch)
+(function detectDeviceTier() {
+  const hasTouch = (navigator?.maxTouchPoints || 0) > 0;
+  const isMobileViewport = window.innerWidth < 900;
+  const isMobile = (window.matchMedia?.('(hover: none) and (pointer: coarse)').matches) || (hasTouch && isMobileViewport);
+  let tier = 'pc';
+  if (isMobile) {
+    const cores = navigator.hardwareConcurrency || 4;
+    const ram = navigator.deviceMemory || 4;
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const isBudgetSamsung = /sm-a06|sm-a05|sm-a04|sm-a03|sm-a02|sm-a01/i.test(navigator.userAgent);
+    const isMediatek = /mt67|mt68|mediatek|helio/i.test(ua);
+    if (isBudgetSamsung || ram <= 3 || cores <= 4 || isMediatek) tier = 'low';
+    else if (ram >= 8 && cores >= 8) tier = 'high';
+    else tier = 'mid';
+  }
+  window.__DEVICE_TIER__ = tier;
+  document.documentElement.classList.add(`tier-${tier}`);
+  if (isMobile) document.documentElement.classList.add('is-mobile');
+  // Browser detection for CSS targeting
+  const ua = navigator.userAgent || '';
+  if (/SamsungBrowser/i.test(ua)) document.documentElement.classList.add('browser-samsung');
+  if (/CriOS|Chrome\/[\d.]+ Mobile Safari/i.test(ua) && /iPhone|iPad|iPod/i.test(ua)) document.documentElement.classList.add('browser-ios');
+  if (/MiuiBrowser|XiaoMi/i.test(ua)) document.documentElement.classList.add('browser-miui');
+  console.log(`[device] tier=${tier} isMobile=${isMobile} cores=${navigator.hardwareConcurrency} ram=${navigator.deviceMemory}GB`);
+})();
 
 // JS-based game-container scale: works on ALL mobile browsers (Samsung Browser,
 // older Chrome Android, etc) where CSS calc(min(viewport units)) might fail silently.
