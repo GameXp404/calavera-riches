@@ -25,15 +25,17 @@ const IDLE_ANIM = {
 // Called from createSymbol AFTER fit scale is set so we know baseScale.
 // Random per-instance delay so all symbols don't pulse in sync (organic feel).
 // Tween auto-killed via killSymbolTweens (it walks sprite.children and kills tweens).
-// PERF: detect mobile once (cached) — skip idle animations on mobile to save CPU.
-const _ANIM_IS_MOBILE = typeof window !== 'undefined' && (
-  (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) ||
-  ((navigator?.maxTouchPoints || 0) > 0 && window.innerWidth < 900)
-);
+// PERF: skip idle animations on mid/low tier mobile (saves 5-15% CPU).
+// HIGH tier (flagships) still gets the breathing for premium feel.
+function _skipIdleAnim() {
+  if (typeof document === 'undefined') return false;
+  const cls = document.documentElement.className;
+  return cls.includes('tier-low') || cls.includes('tier-mid');
+}
 
 function applyIdleAnim(sprite, symId, baseScale) {
-  // Mobile: skip idle breathing/sway completely (saves ~5-15% CPU on 20+ symbols)
-  if (_ANIM_IS_MOBILE) return;
+  // Low/mid mobile: skip idle breathing/sway completely
+  if (_skipIdleAnim()) return;
   const cfg = IDLE_ANIM[symId];
   if (!cfg || !sprite || sprite.destroyed) return;
   const delay = Math.random() * cfg.dur * 0.7; // de-sync starts

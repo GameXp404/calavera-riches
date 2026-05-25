@@ -56,15 +56,20 @@ function getSparkleTexture(renderer) {
   return _sparkleTexture;
 }
 
-// MOBILE PERFORMANCE: detect touch-only devices (no hover) and scale particle
-// counts down so weaker hardware can maintain 60fps. Detected once per session.
-const IS_LOW_PERF = typeof window !== 'undefined' && (
-  (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) ||
-  ((navigator?.maxTouchPoints || 0) > 0 && window.innerWidth < 900)
-);
-// Multiplier applied to particle counts on low-perf devices (60% of desktop)
-const PERF_SCALE = IS_LOW_PERF ? 0.55 : 1.0;
-const scaleCount = (n) => Math.max(8, Math.round(n * PERF_SCALE));
+// DEVICE-TIERED PARTICLE COUNTS. main.js sets <html class="tier-{low|mid|high|pc}">.
+//   PC:  1.0 (full)   — desktop, premium experience
+//   HIGH: 0.85         — flagship phones, slight reduction
+//   MID:  0.55         — main mobile target (Samsung A14, Redmi Note 11 etc)
+//   LOW:  0.35         — Samsung A06, budget phones — aggressive reduction
+const getPerfScale = () => {
+  if (typeof document === 'undefined') return 1.0;
+  const cls = document.documentElement.className;
+  if (cls.includes('tier-low'))  return 0.35;
+  if (cls.includes('tier-mid'))  return 0.55;
+  if (cls.includes('tier-high')) return 0.85;
+  return 1.0; // pc
+};
+const scaleCount = (n) => Math.max(6, Math.round(n * getPerfScale()));
 
 // Procedural gold coin texture for win celebration coin shower (F1)
 let _coinTexture = null;
@@ -177,9 +182,10 @@ export const WinCelebration = {
     const th = label.texture.orig ? label.texture.orig.height : label.texture.height;
     // CONTAIN viewport: Math.min so image fully visible.
     // Now uses stage-local W,H so scale is correct.
-    // Margin 0.95 for slight breathing room from edges.
+    // Margin 1.0 = image fills viewport edge-to-edge (per user request "kurang besar").
+    // Entrance overshoot lowered to 1.0 (no overshoot) to prevent transient overflow.
     const labelTargetScale = (tw > 0 && th > 0)
-      ? Math.min(W / tw, H / th) * 0.95
+      ? Math.min(W / tw, H / th) * 1.0
       : 1.0;
     if (!label.texture.valid) {
       label.texture.baseTexture.once('loaded', () => {
@@ -283,10 +289,9 @@ export const WinCelebration = {
       // F3 Label entrance: simultaneous rotation + drop + scale pop (scaled to image fit)
       .to(label, { rotation: 0, duration: 0.75, ease: 'power3.out' }, '-=0.3')
       .to(label, { y: labelSettleY, duration: 0.6, ease: 'back.out(1.8)' }, '<')
-      // Modest overshoot 1.05x for entrance pop (label.scale temporarily goes over,
-      // but 1.05 * 0.95 margin = 0.998 ≤ 1.0, so still fits in viewport)
-      .to(label.scale, { x: labelTargetScale * 1.05, y: labelTargetScale * 1.05, duration: 0.55, ease: 'back.out(2.5)' }, '<')
-      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.25, ease: 'power2.out' })
+      // No overshoot — image is at margin 1.0 (fills viewport), so any overshoot
+      // would crop. Just animate to settle scale directly with back ease for nice pop feel.
+      .to(label.scale, { x: labelTargetScale, y: labelTargetScale, duration: 0.55, ease: 'back.out(2.5)' }, '<')
       // F3 Wobble settle — brief rotation oscillation before holding still
       .to(label, { rotation: wobbleAmp, duration: 0.12, ease: 'sine.inOut' })
       .to(label, { rotation: -wobbleAmp * 0.65, duration: 0.13, ease: 'sine.inOut' })

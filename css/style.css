@@ -2264,11 +2264,54 @@ body {
   .ctrl-btn:active, .util-btn:active, .spin-btn:active {
     transition-duration: 0.05s;
   }
-  /* Larger tap targets for util buttons on mobile */
+  /* Larger tap targets for util buttons on mobile (min 44x44 per Apple HIG) */
   .util-btn {
     min-width: 36px;
     min-height: 36px;
   }
+  /* Critical buttons get extra tap area on mobile */
+  .spin-btn, .menu-btn.primary, #btn-login {
+    min-height: 50px;
+  }
+}
+
+/* ============ BROWSER-SPECIFIC FIXES ============ */
+
+/* SAFARI iOS — 100vh issue, audio quirks, sticky position */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari treats 100vh as height including URL bar (when scrolled), causing
+     content to be cut off. Use 100% of body instead. */
+  body { height: 100%; min-height: -webkit-fill-available; }
+  html { height: -webkit-fill-available; }
+  /* Prevent iOS bouncing on overscroll */
+  #game-container { overscroll-behavior: none; }
+  /* Fix Safari's overflow-anchor: prevent layout shift */
+  body { overflow-anchor: none; }
+}
+
+/* SAMSUNG INTERNET — Specific quirks (used by ~15% Android users) */
+/* Samsung Internet supports CSS Grid + Flex but sometimes glitchy with transform.
+   Force GPU layer to prevent rendering bugs. */
+.is-mobile #game-container {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* FALLBACK for Samsung browsers < 14.0 that may not parse calc(min(...)) properly.
+   The JS-computed --game-scale already handles this case. */
+
+/* XIAOMI MI BROWSER / MIUI — uses Chromium but sometimes blocks PWA features.
+   Fallback styles handled via @supports. */
+
+/* OPPO/REALME BROWSER — typically Chromium-based, no special handling needed */
+
+/* CHROMIUM-BASED FOLDABLES — Samsung Galaxy Fold, Surface Duo
+   When folded, viewport can be very narrow (~280px). Ensure UI doesn't break. */
+@media (max-width: 320px) {
+  .menu-btn.primary { font-size: 18px !important; padding: 14px 24px !important; }
+  .login-card { padding: 24px 16px !important; }
+  .login-title { font-size: 24px !important; }
 }
 
 /* Tiny screens (<480px width) — reduce padding for ultra-compact phones */
@@ -2933,6 +2976,44 @@ button, .menu-action-btn, .picker-opt, .ctrl-btn, .util-btn, .spin-btn {
 }
 
 /* Bigger touch targets on small screens — easier to tap accurately. */
+/* ============ DEVICE TIER STYLING ============
+   main.js detects device tier and adds class to <html>:
+   - .tier-pc:   full experience
+   - .tier-high: flagship phones (S22+, iPhone 13+) — minor reductions
+   - .tier-mid:  mid-range (A14, Redmi Note 11) — standard mobile perf
+   - .tier-low:  budget (A06, A05, A04) — aggressive perf cuts
+   Plus .is-mobile for any non-PC device.
+============================================ */
+
+/* TIER LOW (Samsung A06 class — 4GB RAM budget phones) */
+.tier-low {
+  /* Eliminate ALL non-essential filters */
+}
+.tier-low #game-container { filter: none !important; }    /* remove drop-shadow */
+.tier-low .menu-btn, .tier-low .menu-btn-mini {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4) !important;
+  filter: none !important;
+}
+.tier-low .menu-btn.primary::before { display: none !important; }
+.tier-low .login-card { filter: none !important; box-shadow: 0 4px 16px rgba(0,0,0,0.6) !important; }
+.tier-low .splash-skull { filter: drop-shadow(0 0 8px rgba(247, 200, 115, 0.5)) !important; }
+/* Disable all breath/glow animations on tier-low */
+.tier-low .mult-badge.center { animation: none !important; }
+.tier-low .freespin-badge { animation: none !important; }
+.tier-low .splash-title { animation: none !important; }
+.tier-low .pwa-install { animation: none !important; }
+/* Lighter shadows */
+.tier-low #balance, .tier-low #win, .tier-low .center-mult {
+  text-shadow: 0 1px 1px rgba(0,0,0,0.9) !important;
+}
+
+/* TIER MID (Samsung A14, Redmi Note 11/12 class) */
+.tier-mid #game-container { filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
+.tier-mid #balance, .tier-mid #win, .tier-mid .center-mult {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.9) !important;
+}
+
+/* Generic mobile (was @media query before) — now triggered by .is-mobile class */
 @media (hover: none) and (pointer: coarse) {
   /* Reduce filter cost on mobile — drop a heavy filter for perf */
   .center-mult, #balance, #win {

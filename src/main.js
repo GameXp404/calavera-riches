@@ -137,28 +137,56 @@ const Game = {
     const w = Math.max(rect.width, 100);
     const h = Math.max(rect.height, 100);
 
-    // PERF: Detect mobile/touch device to apply aggressive optimization.
-    //   - PIXI resolution capped: mobile devices often have devicePixelRatio 2-3,
-    //     which means PIXI renders at 4-9x more pixels. Cap to 1.0 on mobile
-    //     for big FPS gain. Slight quality loss is acceptable for smooth gameplay.
-    //   - antialias disabled on mobile (GPU heavy filter).
-    const isMobile = (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches)
-      || ((navigator?.maxTouchPoints || 0) > 0 && window.innerWidth < 900);
+    // DEVICE TIER DETECTION: Adaptasi performa untuk berbagai HP.
+    // Tier LOW: Samsung A06, A05, Redmi 12C, Infinix Hot (4GB RAM, MediaTek)
+    // Tier MID: Samsung A14/A24/A34, Redmi Note 11/12, Oppo A78
+    // Tier HIGH: Samsung S22+, iPhone 13+, Xiaomi 13+
+    // Tier PC: Desktop (no touch)
+    const detectDeviceTier = () => {
+      const hasTouch = (navigator?.maxTouchPoints || 0) > 0;
+      const isMobileViewport = window.innerWidth < 900;
+      const isMobile = (window.matchMedia?.('(hover: none) and (pointer: coarse)').matches) || (hasTouch && isMobileViewport);
+      if (!isMobile) return 'pc';
+      // Mobile device — categorize by hardware
+      const cores = navigator.hardwareConcurrency || 4;
+      const ram = navigator.deviceMemory || 4;   // GB (only Chrome supports)
+      const ua = (navigator.userAgent || '').toLowerCase();
+      // Samsung A06, A05, A04 budget series → LOW
+      const isBudgetSamsung = /sm-a06|sm-a05|sm-a04|sm-a03/i.test(navigator.userAgent);
+      // MediaTek = mostly budget
+      const isMediatek = /mt67|mt68|mediatek|helio/i.test(ua);
+      // Low-end heuristic
+      if (isBudgetSamsung || ram <= 3 || cores <= 4 || isMediatek) return 'low';
+      // High-end heuristic
+      if (ram >= 8 && cores >= 8) return 'high';
+      return 'mid';
+    };
+    const tier = detectDeviceTier();
+    this._deviceTier = tier;
+    this._isMobile = tier !== 'pc';
+    // Add CSS class for tiered styling
+    document.documentElement.classList.add(`tier-${tier}`);
+    if (this._isMobile) document.documentElement.classList.add('is-mobile');
+
+    // Per-tier PIXI config:
     const dpr = window.devicePixelRatio || 1;
-    const pixiResolution = isMobile ? 1.0 : Math.min(dpr, 2);
-    this._isMobile = isMobile;
+    const tierConfig = {
+      pc:   { resolution: Math.min(dpr, 2), antialias: true,  maxFPS: 60 },
+      high: { resolution: Math.min(dpr, 1.5), antialias: true,  maxFPS: 60 },
+      mid:  { resolution: 1.0, antialias: false, maxFPS: 30 },
+      low:  { resolution: 1.0, antialias: false, maxFPS: 24 }, // Samsung A06 lebih hemat
+    };
+    const cfg = tierConfig[tier];
 
     this.app = new PIXI.Application({
       width: w, height: h, backgroundAlpha: 0,
-      antialias: !isMobile,        // disable AA on mobile (big perf win)
-      resolution: pixiResolution,
+      antialias: cfg.antialias,
+      resolution: cfg.resolution,
       autoDensity: true,
-      powerPreference: 'high-performance',
+      powerPreference: tier === 'low' ? 'low-power' : 'high-performance',
     });
-    // Cap FPS to 30 on mobile to save battery + reduce thermal throttling
-    if (isMobile) {
-      this.app.ticker.maxFPS = 30;
-    }
+    this.app.ticker.maxFPS = cfg.maxFPS;
+    console.log(`[device] tier=${tier}, dpr=${dpr}, resolution=${cfg.resolution}, fps=${cfg.maxFPS}`);
     canvasParent.appendChild(this.app.view);
 
     await this.preloadAssets();
