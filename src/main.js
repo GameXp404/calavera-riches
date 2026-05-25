@@ -599,7 +599,10 @@ const Game = {
     let allWins = [];
     // E2: reset any leftover cascade music layers from previous spin
     Audio.clearCascadeIntensity?.();
-    while (result.totalWin > 0 && cascadeIter < 5) {
+    // Cascade until no more wins. Cap at 50 matches headless RTP sim (src/sim.js).
+    // Previously capped at 5 which silently dropped legitimate cascade wins and
+    // skewed RTP far below the calibrated 96.6% target.
+    while (result.totalWin > 0 && cascadeIter < 50) {
       // Sync cascade iter to Reels so per-cell sound calls can pitch-escalate
       Reels._cascadeIter = cascadeIter;
 
