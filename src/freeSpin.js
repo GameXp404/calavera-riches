@@ -51,7 +51,11 @@ export const FreeSpin = {
 export function showTransitionIntro(app, stage, scatterCount, award, startMult, onComplete) {
   const overlay = new PIXI.Container();
   stage.addChild(overlay);
-  const W = app.screen.width, H = app.screen.height;
+  // CRITICAL: divide by stage.scale to use stage-local coords (overlay inherits stage transform).
+  // Without this, positions/sizes are double-scaled and content overflows canvas.
+  const stageScale = stage.scale.x || 1;
+  const W = app.screen.width / stageScale;
+  const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
   // Tier mapping for particle counts (more scatter = bigger celebration)
@@ -238,7 +242,10 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
 export function showSummary(app, stage, summary, onComplete) {
   const overlay = new PIXI.Container();
   stage.addChild(overlay);
-  const W = app.screen.width, H = app.screen.height;
+  // Stage-local coords (same fix as WinCelebration + showTransitionIntro)
+  const stageScale = stage.scale.x || 1;
+  const W = app.screen.width / stageScale;
+  const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
   // Tier — use EPIC for moderate celebration, LEGENDARY if big totalWon (>100x bet typically)
