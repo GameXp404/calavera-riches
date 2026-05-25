@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import '../css/style.css';
-import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, fmtMoney } from './config.js';
+import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, WIN_TIERS, fmtMoney } from './config.js';
 import { Difficulty } from './difficulty.js';
 import { evaluateWays, countScatters } from './ways.js';
 import { Multiplier } from './multiplier.js';
@@ -34,7 +34,7 @@ const Game = {
       stopOnBigWin: false,
       stopOnWinAboveBet: 0, // 0 = disabled; otherwise stop if single-win >= bet * X
     },
-    stats: { spins: 0, totalBet: 0, totalWin: 0 },
+    stats: { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 },
   },
 
   resetAllData() {
@@ -45,11 +45,11 @@ const Game = {
     this.state.balance = GAME_CONFIG.STARTING_BALANCE;
     this.state.bet = GAME_CONFIG.DEFAULT_BET;
     this.state.betIdx = GAME_CONFIG.BET_LEVELS.indexOf(GAME_CONFIG.DEFAULT_BET);
-    this.state.turbo = false;
+    this.state.turbo = 0;
     this.state.autoSpinning = false;
     this.state.autoRemaining = 0;
     this.state.autoConfig = { count: 25, stopOnFreeSpin: true, stopOnBigWin: false, stopOnWinAboveBet: 0 };
-    this.state.stats = { spins: 0, totalBet: 0, totalWin: 0 };
+    this.state.stats = { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 };
 
     // Submodules
     Multiplier.current = 1;
@@ -274,7 +274,7 @@ const Game = {
     document.getElementById('btn-history')?.addEventListener('click', () => {
       // History — show simple alert with session stats for now
       const s = this.state.stats || {};
-      alert(`Riwayat Sesi:\nTotal Spin: ${s.totalSpins || 0}\nTotal Menang: Rp ${(s.totalWin || 0).toLocaleString('id-ID')}\nWin Terbesar: Rp ${(s.biggestWin || 0).toLocaleString('id-ID')}`);
+      alert(`Riwayat Sesi:\nTotal Spin: ${s.spins || 0}\nTotal Taruhan: Rp ${(s.totalBet || 0).toLocaleString('id-ID')}\nTotal Menang: Rp ${(s.totalWin || 0).toLocaleString('id-ID')}\nWin Terbesar: Rp ${(s.biggestWin || 0).toLocaleString('id-ID')}`);
     });
     document.getElementById('btn-logout')?.addEventListener('click', () => setTimeout(closeMenu, 50));
     // Hidden admin trigger — click hidden gear button or shift+click avatar
@@ -581,6 +581,17 @@ const Game = {
     }
 
     let grid = await Reels.spin(this.state.turbo);
+    // Defensive: if a concurrent spin somehow slipped past the spinning guard,
+    // Reels.spin() resolves with null instead of a grid. Refund the bet and
+    // bail out cleanly rather than crashing in evaluateWays(null).
+    if (!grid) {
+      if (!FreeSpin.active) {
+        this.state.balance += this.state.bet;
+        this.updateHUD();
+      }
+      spinBtn.disabled = false;
+      return;
+    }
 
     // Wild Expand DISABLED permanently per user decision (2026-05-20 final).
     // Catrina ALWAYS stays single-cell where it lands, both base spin AND free
@@ -684,7 +695,12 @@ const Game = {
     if (scatterCount >= 3 && !FreeSpin.active) {
       const award = FreeSpin.start(scatterCount);
       this.state.balance += multipliedWin;
-      if (multipliedWin > 0) this.state.stats.totalWin += multipliedWin;
+      if (multipliedWin > 0) {
+        this.state.stats.totalWin += multipliedWin;
+        if (multipliedWin > (this.state.stats.biggestWin || 0)) {
+          this.state.stats.biggestWin = multipliedWin;
+        }
+      }
       this.updateHUD();
       this.savePlayerPrefs(); // persist balance after FS trigger win
       // E3: switch music — fade out base game music, start dramatic FS music
@@ -746,6 +762,9 @@ const Game = {
           this._celebrating = false;
           this.state.balance += multipliedWin;
           this.state.stats.totalWin += multipliedWin;
+          if (multipliedWin > (this.state.stats.biggestWin || 0)) {
+            this.state.stats.biggestWin = multipliedWin;
+          }
           this.updateHUD();
           this.savePlayerPrefs(); // persist new balance after win
           await finishSpin();
@@ -888,7 +907,7 @@ const Game = {
       });
       document.getElementById('info-tab-history')?.addEventListener('click', () => {
         const s = this.state.stats || {};
-        alert(`Riwayat Sesi:\nTotal Spin: ${s.totalSpins || 0}\nTotal Menang: Rp ${(s.totalWin || 0).toLocaleString('id-ID')}\nWin Terbesar: Rp ${(s.biggestWin || 0).toLocaleString('id-ID')}`);
+        alert(`Riwayat Sesi:\nTotal Spin: ${s.spins || 0}\nTotal Taruhan: Rp ${(s.totalBet || 0).toLocaleString('id-ID')}\nTotal Menang: Rp ${(s.totalWin || 0).toLocaleString('id-ID')}\nWin Terbesar: Rp ${(s.biggestWin || 0).toLocaleString('id-ID')}`);
       });
       document.getElementById('info-tab-exit')?.addEventListener('click', () => {
         close();
@@ -1334,7 +1353,7 @@ const Game = {
       // Stop conditions
       if (cfg.stopOnFreeSpin && FreeSpin.active && !wasInBonus) break;
       if (cfg.stopOnWinAboveBet > 0 && winThisSpin >= this.state.bet * cfg.stopOnWinAboveBet) break;
-      if (cfg.stopOnBigWin && winThisSpin >= this.state.bet * 5) break; // BIG = ≥5×bet (per WIN_TIERS)
+      if (cfg.stopOnBigWin && winThisSpin >= this.state.bet * WIN_TIERS.BIG.min) break;
 
       await new Promise(r => setTimeout(r, 400));
     }
