@@ -2291,10 +2291,10 @@ body {
 
 /* SAMSUNG INTERNET — Specific quirks (used by ~15% Android users) */
 /* Samsung Internet supports CSS Grid + Flex but sometimes glitchy with transform.
-   Force GPU layer to prevent rendering bugs. */
+   Hint GPU layer via will-change ONLY — do NOT override `transform`, otherwise the
+   translate(-50%,-50%) scale(...) above is wiped out and the 577x950 container
+   stays at top-left unscaled (covers only a corner of the mobile viewport). */
 .is-mobile #game-container {
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
   will-change: transform;
 }
 
