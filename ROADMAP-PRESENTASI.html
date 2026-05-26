@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calavera Riches — Roadmap Presentasi</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0a0e1a;
+  color: #e5e7eb;
+  line-height: 1.6;
+  padding: 40px 20px;
+}
+.container { max-width: 900px; margin: 0 auto; }
+header {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #831843 100%);
+  border-radius: 20px;
+  margin-bottom: 40px;
+  border: 2px solid #fbbf24;
+}
+header h1 {
+  font-size: 2.5em;
+  background: linear-gradient(90deg, #fbbf24, #f97316, #ef4444);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 10px;
+}
+header .subtitle { color: #cbd5e1; font-size: 1.1em; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 30px 0;
+}
+.stat {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #fbbf24;
+}
+.stat .label { color: #94a3b8; font-size: 0.85em; text-transform: uppercase; }
+.stat .value { color: #fbbf24; font-size: 1.5em; font-weight: bold; margin-top: 5px; }
+.phase {
+  margin: 50px 0 20px 0;
+  padding: 15px 25px;
+  border-radius: 12px;
+  font-size: 1.4em;
+  font-weight: bold;
+}
+.phase-done { background: linear-gradient(90deg, #064e3b, #065f46); color: #6ee7b7; border-left: 6px solid #22c55e; }
+.phase-running { background: linear-gradient(90deg, #78350f, #92400e); color: #fcd34d; border-left: 6px solid #f59e0b; }
+.phase-pending { background: linear-gradient(90deg, #1e293b, #334155); color: #94a3b8; border-left: 6px solid #64748b; }
+.step {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 25px;
+  margin: 20px 0;
+  border-left: 5px solid;
+}
+.step.done { border-left-color: #22c55e; }
+.step.running { border-left-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
+.step.pending { border-left-color: #64748b; opacity: 0.85; }
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+.step-num {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5em; font-weight: bold;
+  flex-shrink: 0;
+}
+.step.done .step-num { background: #22c55e; color: #052e16; }
+.step.running .step-num { background: #f59e0b; color: #422006; }
+.step.pending .step-num { background: #475569; color: #cbd5e1; }
+.step-title {
+  flex: 1;
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #f1f5f9;
+}
+.step-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.step.done .step-status { background: #22c55e; color: #052e16; }
+.step.running .step-status { background: #f59e0b; color: #422006; }
+.step.pending .step-status { background: #475569; color: #e2e8f0; }
+.step-desc { color: #cbd5e1; margin-bottom: 15px; }
+.bahan {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 18px;
+  margin-top: 15px;
+  border: 1px solid #334155;
+}
+.bahan-label { color: #fbbf24; font-weight: bold; margin-bottom: 10px; font-size: 0.95em; }
+.bahan ul { list-style: none; padding-left: 0; }
+.bahan li {
+  padding: 5px 0;
+  padding-left: 20px;
+  position: relative;
+  color: #cbd5e1;
+}
+.bahan li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: #fbbf24;
+}
+.bahan li strong { color: #fbbf24; }
+.output {
+  background: #064e3b;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-top: 10px;
+  color: #6ee7b7;
+  border-left: 4px solid #22c55e;
+}
+.warning {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 12px 18px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border-left: 4px solid #ef4444;
+}
+.live-link {
+  text-align: center;
+  padding: 30px;
+  background: linear-gradient(135deg, #065f46, #14532d);
+  border-radius: 16px;
+  margin: 40px 0;
+  border: 2px solid #22c55e;
+}
+.live-link a {
+  font-size: 2em;
+  color: #6ee7b7;
+  text-decoration: none;
+  font-weight: bold;
+}
+.live-link a:hover { color: #fbbf24; }
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 30px 0;
+  background: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.summary-table th, .summary-table td {
+  padding: 15px 20px;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+}
+.summary-table th {
+  background: #0f172a;
+  color: #fbbf24;
+  font-weight: bold;
+}
+.summary-table tr:last-child td { border-bottom: none; }
+footer {
+  text-align: center;
+  margin-top: 60px;
+  padding: 30px;
+  color: #64748b;
+  font-size: 0.9em;
+}
+@media print {
+  body { background: white; color: black; padding: 10px; }
+  .step { background: #f8fafc; color: black; page-break-inside: avoid; }
+  .step-desc, .bahan li { color: #1e293b; }
+  .bahan { background: #f1f5f9; border-color: #cbd5e1; }
+  header, .phase { background: #334155 !important; color: white !important; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🎰 CALAVERA RICHES — SLOT GAME</h1>
+  <div class="subtitle">Mexican Day of the Dead · 1024-Ways Tumble Slot · PixiJS + Vite</div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="label">Total Tahap</div><div class="value">13</div></div>
+  <div class="stat"><div class="label">Source Code</div><div class="value">6.221 baris</div></div>
+  <div class="stat"><div class="label">File Asset</div><div class="value">48 file</div></div>
+  <div class="stat"><div class="label">Audio</div><div class="value">34 file</div></div>
+  <div class="stat"><div class="label">RTP</div><div class="value">96,6%</div></div>
+  <div class="stat"><div class="label">Status</div><div class="value">🟢 LIVE</div></div>
+</div>
+
+<div class="live-link">
+  <div style="color: #cbd5e1; margin-bottom: 10px;">Game live 24/7 di:</div>
+  <a href="https://calaverariche.netlify.app">calaverariche.netlify.app</a>
+</div>
+
+<div class="phase phase-done">✅ FASE SUDAH SELESAI (8 tahap)</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">1</div>
+    <div class="step-title">💡 Ide & Konsep Awal</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Memutuskan tema Mexican Day of the Dead dengan mekanisme 1024 cara menang. Terinspirasi Wild Bandito tapi semua asset orisinal.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li>Riset slot game referensi (Wild Bandito, Sweet Bonanza, Gates of Olympus)</li>
+      <li>Mood board: skull, marigold, mariachi, papel picado</li>
+      <li>Spek teknis target: HP A06, iPhone, PC</li>
+      <li>Math model: <strong>RTP 96,6%</strong>, max win 5000×</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: Dokumen spek lengkap (judul, tema, mekanisme, target).</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">2</div>
+    <div class="step-title">⚙️ Pondasi Teknis</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Memasang sistem dasar + membuat "otak" game.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li><strong>PixiJS 7.4.2</strong> — gambar 2D WebGL</li>
+      <li><strong>Vite 5</strong> — build tool cepat</li>
+      <li><strong>GSAP 3.12.5</strong> — animasi mulus</li>
+      <li><strong>Web Audio API</strong> — suara native browser</li>
+      <li>Math engine 1024-ways evaluator</li>
+      <li>Headless RTP simulator (2 juta spin)</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: Mesin matematika kalibrasi RTP 96,6% terbukti via simulasi.</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">3</div>
+    <div class="step-title">🎨 Membuat Tampilan</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">10 simbol orisinal + latar belakang + bingkai banner.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN ASET:</div>
+    <ul>
+      <li><strong>Pollinations Flux AI</strong> — free image generator</li>
+      <li><strong>10 PNG simbol:</strong> Sugar Skull, Mariachi, Gitar, Maracas, Catrina (WILD), Coffin (SCATTER animasi video 960×960 24fps 5s)</li>
+      <li><strong>5 huruf:</strong> A, K, Q, J, 10</li>
+      <li><strong>Latar:</strong> cemetery night scene</li>
+      <li><strong>Bingkai:</strong> bandit portrait full frame</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: 11 simbol + 1 video + 2 background. Semua orisinal anti-IP infringement.</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">4</div>
+    <div class="step-title">🎵 Sistem Audio Berlapis</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Audio dibuat 3 lapis: synth, sample, voice.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN AUDIO:</div>
+    <ul>
+      <li><strong>13 synth procedural</strong> (Web Audio): spinStart, reelWhoosh, cascadePop, scatterLand, winSmall/Big/Epic/Legendary</li>
+      <li><strong>17 sample MP3/WAV</strong> dari Mixkit + Freesound (CC0)</li>
+      <li><strong>4 layer cascade music:</strong> kick → tamborin → trompet → simbal (berlapis per cascade)</li>
+      <li><strong>D-minor BPM 100</strong> dedicated free spin music</li>
+      <li><strong>4 voice cheer:</strong> BIG / MEGA / EPIC / LEGENDARY</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: 34 audio file terintegrasi.</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">5</div>
+    <div class="step-title">✨ Sentuhan Premium AAA</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Detail yang bikin terasa game kelas atas (Wild Bandito setara).</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN POLISH:</div>
+    <ul>
+      <li><strong>F1 Coin shower:</strong> 20/35/55/90 koin per tier</li>
+      <li><strong>F2 Confetti papel picado:</strong> 30/60/100/180 lembar 6 warna</li>
+      <li><strong>F3 Label entrance:</strong> backspin rotation -π/2 sampai -2π</li>
+      <li><strong>F4 Camera shake:</strong> 4-20px per tier (+ tremor LEGENDARY)</li>
+      <li><strong>F5 Sparkle trails</strong> di counter (50-180ms)</li>
+      <li><strong>Gold-Framed Symbols:</strong> 18% per cell reel 2-4, max 3/spin. Gold menang → convert WILD</li>
+      <li><strong>Tombol Spin emas</strong> gradien + shimmer band 3s loop</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: Feel game premium AAA, setara PG Soft.</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">6</div>
+    <div class="step-title">📱 Dukungan Semua Perangkat</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Game auto-adapt ke device pemain.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN COMPAT:</div>
+    <ul>
+      <li><strong>Device tier detection:</strong> low/mid/high/pc otomatis</li>
+      <li><strong>Browser support:</strong> Chrome, Safari, Samsung Internet, MIUI Xiaomi</li>
+      <li><strong>Mobile foldable</strong> Samsung Z Fold compat</li>
+      <li><strong>Stage-local coordinate scaling</strong> (anti-crop di resolusi apapun)</li>
+      <li><strong>JS-computed scale</strong> via CSS variable</li>
+    </ul>
+    <div class="bahan-label" style="margin-top: 15px;">📱 PERANGKAT TARGET:</div>
+    <ul>
+      <li>Samsung A06 (low tier)</li>
+      <li>iPhone (mid tier)</li>
+      <li>Tablet (mid tier)</li>
+      <li>PC desktop (high tier)</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: Lintas device tanpa lag, layout sempurna.</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">7</div>
+    <div class="step-title">🐛 Audit Bug & Perbaikan Kritis</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Audit menyeluruh menemukan 5 bug.</div>
+  <div class="warning">
+    <strong>⚠️ BUG #1 KRITIS:</strong> Cascade dibatasi 5× padahal seharusnya 50×. Player kehilangan banyak win. <strong>Fix:</strong> cap 5 → 50.
+  </div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BUG MINOR:</div>
+    <ul>
+      <li><strong>#2:</strong> Auto-stop "BIG win" threshold 5× (harusnya 10×)</li>
+      <li><strong>#3:</strong> resetAllData turbo = false (harusnya number 0)</li>
+      <li><strong>#4:</strong> Game.spin() null check missing</li>
+      <li><strong>#5:</strong> Riwayat stats kosong (totalSpins typo, biggestWin not tracked)</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: 2 commit pushed: 2593003 (CRITICAL) + 9f4c49f (4 minor).</div>
+</div>
+
+<div class="step done">
+  <div class="step-header">
+    <div class="step-num">8</div>
+    <div class="step-title">🚀 RILIS LIVE 24/7</div>
+    <div class="step-status">Selesai</div>
+  </div>
+  <div class="step-desc">Auto-deploy lewat GitHub → Netlify.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN DEPLOY:</div>
+    <ul>
+      <li><strong>GitHub repo:</strong> GameXp404/calavera-riches</li>
+      <li><strong>Netlify build:</strong> vite build → folder dist</li>
+      <li><strong>Auto-trigger:</strong> setiap git push commit baru</li>
+      <li><strong>Build time:</strong> ~1 menit</li>
+      <li><strong>Domain:</strong> calaverariche.netlify.app</li>
+    </ul>
+  </div>
+  <div class="output">🎯 OUTPUT: Game bisa diakses publik tanpa instalasi, semua device, gratis selamanya.</div>
+</div>
+
+<div class="phase phase-running">🔄 FASE SEDANG JALAN (1 tahap)</div>
+
+<div class="step running">
+  <div class="step-header">
+    <div class="step-num">9</div>
+    <div class="step-title">💓 Monitoring & Bug Fix Lanjutan</div>
+    <div class="step-status">Jalan</div>
+  </div>
+  <div class="step-desc">Memantau pemain di production + fix bug yang muncul.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN MONITORING:</div>
+    <ul>
+      <li>Cek Netlify analytics (visitor count, bounce rate)</li>
+      <li>Cek error log Netlify functions</li>
+      <li>Audit RTP nyata vs target 96,6% (sample 1000 spin user)</li>
+      <li>Update dependency npm: pixi.js, gsap, vite</li>
+      <li>Patch security advisories</li>
+      <li>Respond user feedback (max 1-2 hari fix)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="phase phase-pending">⏳ FASE BELUM DIKERJAKAN (4 tahap roadmap)</div>
+
+<div class="step pending">
+  <div class="step-header">
+    <div class="step-num">10</div>
+    <div class="step-title">🎛️ Upgrade Kualitas Audio (Hybrid v3)</div>
+    <div class="step-status">Belum</div>
+  </div>
+  <div class="step-desc">User merasa audio belum cukup nge-feel "Wild Bandito".</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li>Cari file audio premium (Pond5, AudioJungle, CC0 alt)</li>
+      <li>Swap 5-10 file kunci (spin_start, win_epic, scatter_land, free_spin_trigger, reel_whoosh)</li>
+      <li>ElevenLabs voice generation upgrade (paid plan)</li>
+      <li>A/B testing dengan player</li>
+    </ul>
+  </div>
+  <div class="output">⏳ ESTIMASI: 1 minggu cari + swap + test.</div>
+</div>
+
+<div class="step pending">
+  <div class="step-header">
+    <div class="step-num">11</div>
+    <div class="step-title">📤 Fitur Share Sosial</div>
+    <div class="step-status">Belum</div>
+  </div>
+  <div class="step-desc">Pemain bisa share kemenangan ke teman → viral marketing.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li>Tombol "Share Win" muncul saat MEGA/EPIC/LEGENDARY</li>
+      <li>Canvas.toBlob() → screenshot kemenangan</li>
+      <li>Web Share API (navigator.share)</li>
+      <li>Tracking analytics share + klik</li>
+      <li>Target: WhatsApp, Facebook, Instagram Story, Twitter</li>
+    </ul>
+  </div>
+  <div class="output">⏳ ESTIMASI: 3-5 hari coding.</div>
+</div>
+
+<div class="step pending">
+  <div class="step-header">
+    <div class="step-num">12</div>
+    <div class="step-title">🏆 Mode Turnamen Multiplayer</div>
+    <div class="step-status">Belum</div>
+  </div>
+  <div class="step-desc">Kompetisi multiplayer mingguan/bulanan untuk engagement.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li>Backend mini API (Vercel functions / Supabase)</li>
+      <li>Authentication ringan (anonymous + nickname)</li>
+      <li>Entry fee model (kredit virtual)</li>
+      <li>Format: 50× spin dalam 1 jam, total win terbesar menang</li>
+      <li>Live leaderboard real-time</li>
+      <li>Bracket eliminasi mingguan</li>
+      <li>Hadiah: kredit bonus / cosmetic badge</li>
+    </ul>
+  </div>
+  <div class="output">⏳ ESTIMASI: 2-3 minggu.</div>
+</div>
+
+<div class="step pending">
+  <div class="step-header">
+    <div class="step-num">13</div>
+    <div class="step-title">📊 Statistik & Leaderboard</div>
+    <div class="step-status">Belum</div>
+  </div>
+  <div class="step-desc">Sistem retention untuk player long-term.</div>
+  <div class="bahan">
+    <div class="bahan-label">📋 BAHAN:</div>
+    <ul>
+      <li><strong>Profil player:</strong> total spin, total menang, win rate</li>
+      <li><strong>Win terbesar</strong> pribadi & all-time</li>
+      <li><strong>Daily/Weekly/Monthly leaderboard</strong></li>
+      <li><strong>Achievement badges:</strong> 10 LEGENDARY, 1000 spin, 100 cascade chain</li>
+      <li><strong>Cloud save</strong> antar device (Firebase/Supabase)</li>
+      <li><strong>Stat export:</strong> CSV / PDF</li>
+    </ul>
+  </div>
+  <div class="output">⏳ ESTIMASI: 1-2 minggu untuk full system.</div>
+</div>
+
+<div class="phase phase-done" style="margin-top: 60px;">🎯 RINGKASAN EKSEKUTIF</div>
+
+<table class="summary-table">
+  <thead>
+    <tr><th>Fase</th><th>Tahap</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Foundation</td><td>1-4 (Ide, Pondasi, Tampilan, Audio)</td><td>✅ SELESAI</td></tr>
+    <tr><td>Polish</td><td>5-6 (Premium AAA, Multi-Device)</td><td>✅ SELESAI</td></tr>
+    <tr><td>Quality</td><td>7 (Audit Bug)</td><td>✅ SELESAI</td></tr>
+    <tr><td>Release</td><td>8 (RILIS LIVE)</td><td>✅ SELESAI</td></tr>
+    <tr><td>Operations</td><td>9 (Monitoring)</td><td>🔄 JALAN</td></tr>
+    <tr><td>Enhancement</td><td>10-13 (Audio v3, Share, Turnamen, Stats)</td><td>⏳ BELUM</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  <div>🎰 Calavera Riches Roadmap · Dibuat dengan PlanRoket</div>
+  <div style="margin-top: 10px;">Update: 26 Mei 2026 · Tersimpan di Library Tim</div>
+</footer>
+
+</div>
+</body>
+</html>

@@ -553,8 +553,18 @@ const Game = {
       this.state.stats.totalBet += this.state.bet;
       this.savePlayerPrefs(); // persist new balance (bet deducted)
     }
-    document.getElementById('win').textContent = '0';
+    // Cancel any in-flight win counter animation from the previous spin before
+    // resetting to '0'. Otherwise the leftover requestAnimationFrame writes back
+    // the previous total a few ms after we clear, producing a brief flicker.
+    const _winEl = document.getElementById('win');
+    if (_winEl?._counterRaf) cancelAnimationFrame(_winEl._counterRaf);
+    _winEl.textContent = '0';
     this.updateHUD();
+
+    // Defensive reset: clear any leftover cascade pitch state from a previous
+    // spin that errored mid-cascade. Without this, the next spin's cascade pop
+    // / win highlight audio plays at the wrong pitch.
+    if (Reels) Reels._cascadeIter = 0;
 
     const spinBtn = document.getElementById('btn-spin');
     spinBtn.disabled = true;
@@ -567,6 +577,13 @@ const Game = {
       // Without this, a thrown exception during cascade/celebration/intro would
       // permanently lock the SPIN button and player must reload.
       spinBtn.disabled = false;
+      // Also clear leaked cascade music layers + reset stage transform so the
+      // next spin starts from a clean state.
+      Audio.clearCascadeIntensity?.();
+      try {
+        const stage = this.app?.stage;
+        if (stage) { stage.x = 0; stage.y = 0; }
+      } catch (_) {}
       if (Reels.spinning) Reels.spinning = false;
     }
   },
@@ -760,6 +777,13 @@ const Game = {
           if (celebrationDone) return;
           celebrationDone = true;
           this._celebrating = false;
+          // Defensive: if WinCelebration's onComplete didn't fire (e.g. timeline
+          // killed externally or 12s safety timer ran out), reset any leftover
+          // shake offset on the stage so the next spin doesn't render skewed.
+          try {
+            const _stage = this.app?.stage;
+            if (_stage) { _stage.x = 0; _stage.y = 0; }
+          } catch (_) {}
           this.state.balance += multipliedWin;
           this.state.stats.totalWin += multipliedWin;
           if (multipliedWin > (this.state.stats.biggestWin || 0)) {

@@ -691,15 +691,21 @@ export const Audio = {
     const gain = this.ctx.createGain();
     gain.gain.value = (opts.vol != null ? opts.vol : info.vol) || 0.8;
     src.connect(gain);
-    // Optional reverb wet send
+    // Optional reverb wet send. Use complementary dry/wet gains so the perceived
+    // loudness stays equal to a non-reverb sample (previously dry+wet both fed
+    // sfxGain at full level, making reverbed sounds ~1.5–2× louder).
     if (opts.reverb && this._convolverIR) {
       const wet = this.ctx.createGain();
       wet.gain.value = opts.reverb;
+      const dry = this.ctx.createGain();
+      dry.gain.value = 1 - opts.reverb;
       const conv = this.ctx.createConvolver();
       conv.buffer = this._convolverIR;
       gain.connect(conv).connect(wet).connect(this.sfxGain);
+      gain.connect(dry).connect(this.sfxGain);
+    } else {
+      gain.connect(this.sfxGain);
     }
-    gain.connect(this.sfxGain);
     src.start(t);
     return true;
   },
@@ -1060,9 +1066,12 @@ export const Audio = {
   },
 
   // WIN big — brass swell + choir + cymbal crash (BIG/MEGA tier).
-  winBig() {
+  // `_synthOnly = true` skips the sample lookup; used when called as a fallback
+  // from higher tiers (winEpic/winLegendary) where we DO NOT want the big sample
+  // to play on top of an already-playing epic/legendary sample.
+  winBig(_synthOnly = false) {
     if (!this.enabled || !this.ctx) return;
-    if (this._playSample('winBig', { reverb: 0.35 })) return;
+    if (!_synthOnly && this._playSample('winBig', { reverb: 0.35 })) return;
     const t = this.ctx.currentTime;
     // Brass swell
     const brass = this.ctx.createOscillator();
@@ -1105,7 +1114,7 @@ export const Audio = {
   winEpic() {
     if (!this.enabled || !this.ctx) return;
     if (this._playSample('winEpic', { reverb: 0.4 })) return;
-    this.winBig();
+    this.winBig(true);  // synth-only — don't double up with bigSample
     const t = this.ctx.currentTime;
     // Deep impact rumble
     const sub = this.ctx.createOscillator();
@@ -1124,7 +1133,20 @@ export const Audio = {
   winLegendary() {
     if (!this.enabled || !this.ctx) return;
     if (this._playSample('winLegendary', { reverb: 0.5 })) return;
-    this.winEpic();
+    // Inline winEpic's synth path with synth-only big underneath, so we don't
+    // accidentally trigger winEpic's sample on top of legendary synth.
+    this.winBig(true);
+    const _t = this.ctx.currentTime;
+    const _sub = this.ctx.createOscillator();
+    const _sg = this.ctx.createGain();
+    _sub.type = 'sine';
+    _sub.frequency.setValueAtTime(60, _t);
+    _sub.frequency.exponentialRampToValueAtTime(40, _t + 0.6);
+    _sub.connect(_sg).connect(this.sfxGain);
+    _sg.gain.setValueAtTime(0, _t);
+    _sg.gain.linearRampToValueAtTime(0.55, _t + 0.005);
+    _sg.gain.exponentialRampToValueAtTime(0.001, _t + 0.8);
+    _sub.start(_t); _sub.stop(_t + 0.9);
     const t = this.ctx.currentTime;
     // Higher choir octave for divine feel
     const high = this.ctx.createOscillator();
