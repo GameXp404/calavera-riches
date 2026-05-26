@@ -58,6 +58,9 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
   const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
+  // Text scale factor: design width is 577. On narrow phones (A06 stage-local W ~306)
+  // we clamp to 0.55 so "FREE SPINS!" still fits without horizontal clipping.
+  const tScale = Math.max(0.55, Math.min(1, W / 577));
   // Tier mapping for particle counts (more scatter = bigger celebration)
   const tier = scatterCount >= 5 ? 'LEGENDARY' : scatterCount >= 4 ? 'EPIC' : 'MEGA';
 
@@ -134,11 +137,11 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
   // 6. Title — bigger + dramatic gold gradient + drop shadow
   const titleSettleY = cy + 110;
   const title = new PIXI.Text('FREE SPINS!', new PIXI.TextStyle({
-    fontFamily: 'Cinzel, Georgia', fontSize: 56, fontWeight: '900',
+    fontFamily: 'Cinzel, Georgia', fontSize: 56 * tScale, fontWeight: '900',
     fill: ['#fff5d6', '#ffd86b', '#f39c12', '#d35400'],
-    stroke: '#1a0808', strokeThickness: 8,
+    stroke: '#1a0808', strokeThickness: 8 * tScale,
     dropShadow: true, dropShadowColor: '#000000', dropShadowBlur: 12, dropShadowDistance: 5,
-    letterSpacing: 3,
+    letterSpacing: 3 * tScale,
   }));
   title.anchor.set(0.5);
   title.x = cx;
@@ -151,9 +154,9 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
   const detail = new PIXI.Text(
     `${scatterCount} COFFINS  •  ${award.spins} SPINS  •  ${startMult}× MULTIPLIER`,
     new PIXI.TextStyle({
-      fontFamily: 'Cinzel, Georgia', fontSize: 18, fontWeight: 'bold',
+      fontFamily: 'Cinzel, Georgia', fontSize: 18 * tScale, fontWeight: 'bold',
       fill: '#f7c873', stroke: '#5b1818', strokeThickness: 3,
-      letterSpacing: 1.5,
+      letterSpacing: 1.5 * tScale,
     })
   );
   detail.anchor.set(0.5);
@@ -248,6 +251,8 @@ export function showSummary(app, stage, summary, onComplete) {
   const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
+  // Text scale factor — same as showTransitionIntro: clamp at 0.55 so titles fit on narrow phones.
+  const tScale = Math.max(0.55, Math.min(1, W / 577));
   // Tier — use EPIC for moderate celebration, LEGENDARY if big totalWon (>100x bet typically)
   const totalWon = summary.totalWon || 0;
   const tier = totalWon >= 5000 ? 'LEGENDARY' : 'EPIC';
@@ -301,11 +306,11 @@ export function showSummary(app, stage, summary, onComplete) {
   // 5. "BONUS COMPLETE" title — spin entrance from above
   const titleSettleY = cy - 90;
   const title = new PIXI.Text('BONUS COMPLETE', new PIXI.TextStyle({
-    fontFamily: 'Cinzel, Georgia', fontSize: 38, fontWeight: '900',
+    fontFamily: 'Cinzel, Georgia', fontSize: 38 * tScale, fontWeight: '900',
     fill: ['#fff5d6', '#ffd86b', '#f39c12'],
-    stroke: '#5b1818', strokeThickness: 5,
+    stroke: '#5b1818', strokeThickness: 5 * tScale,
     dropShadow: true, dropShadowColor: '#000000', dropShadowBlur: 10, dropShadowDistance: 4,
-    letterSpacing: 2.5,
+    letterSpacing: 2.5 * tScale,
   }));
   title.anchor.set(0.5);
   title.x = cx;
@@ -316,8 +321,8 @@ export function showSummary(app, stage, summary, onComplete) {
 
   // 6. "YOU WON" subtitle
   const totalText = new PIXI.Text('YOU WON', new PIXI.TextStyle({
-    fontFamily: 'Cinzel, Georgia', fontSize: 22, fontWeight: 'bold',
-    fill: '#7dcea0', stroke: '#1a3a30', strokeThickness: 3, letterSpacing: 2,
+    fontFamily: 'Cinzel, Georgia', fontSize: 22 * tScale, fontWeight: 'bold',
+    fill: '#7dcea0', stroke: '#1a3a30', strokeThickness: 3, letterSpacing: 2 * tScale,
   }));
   totalText.anchor.set(0.5);
   totalText.x = cx; totalText.y = cy - 25;
@@ -325,13 +330,13 @@ export function showSummary(app, stage, summary, onComplete) {
   overlay.addChild(totalText);
 
   // 7. Amount counter (will roll 0 → totalWon)
-  const amountSize = tier === 'LEGENDARY' ? 78 : 64;
+  const amountSize = (tier === 'LEGENDARY' ? 78 : 64) * tScale;
   const amount = new PIXI.Text('0.00', new PIXI.TextStyle({
     fontFamily: 'Cinzel, Georgia', fontSize: amountSize, fontWeight: '900',
     fill: ['#fff5d6', '#ffd86b', '#f39c12', '#d35400'],
-    stroke: '#1a0808', strokeThickness: 6,
+    stroke: '#1a0808', strokeThickness: 6 * tScale,
     dropShadow: true, dropShadowColor: '#f39c12', dropShadowBlur: 14, dropShadowDistance: 0,
-    letterSpacing: 2,
+    letterSpacing: 2 * tScale,
   }));
   amount.anchor.set(0.5);
   amount.x = cx; amount.y = cy + 45;
