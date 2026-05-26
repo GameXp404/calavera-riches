@@ -105,6 +105,12 @@ export const FREE_SPIN_RETRIGGER = {
   5: 16,
 };
 
+// Ante Bet (PG Soft signature): toggle ON → bet jadi 1.25× (extra 25%) tapi
+// peluang scatter (COFFIN) jadi ANTE_BET_SCATTER_BOOST× lebih tinggi.
+// Reward: free spin trigger lebih sering ditukar dengan biaya per-spin lebih mahal.
+export const ANTE_BET_MULT = 1.25;
+export const ANTE_BET_SCATTER_BOOST = 2;
+
 export const WIN_TIERS = {
   NORMAL:    { min: 0,   duration: 800,  label: '' },
   BIG:       { min: 10,  duration: 2500, label: 'BIG WIN' },

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import '../css/style.css';
-import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, WIN_TIERS, fmtMoney } from './config.js';
+import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, WIN_TIERS, ANTE_BET_MULT, fmtMoney } from './config.js';
 import { Difficulty } from './difficulty.js';
 import { evaluateWays, countScatters } from './ways.js';
 import { Multiplier } from './multiplier.js';
@@ -26,6 +26,7 @@ const Game = {
     bet: GAME_CONFIG.DEFAULT_BET,
     betIdx: GAME_CONFIG.BET_LEVELS.indexOf(GAME_CONFIG.DEFAULT_BET),
     turbo: 0, // 0=off, 1-5=speed levels
+    anteBet: false, // PG Ante Bet: +25% bet for 2× scatter chance
     autoSpinning: false,
     autoRemaining: 0,
     autoConfig: {
@@ -110,6 +111,7 @@ const Game = {
       if (typeof p.balance === 'number' && p.balance >= 0) {
         this.state.balance = p.balance;
       }
+      if (typeof p.anteBet === 'boolean') this.state.anteBet = p.anteBet;
     } catch (_) {}
   },
   savePlayerPrefs() {
@@ -119,8 +121,17 @@ const Game = {
         turbo: this.state.turbo,
         betIdx: this.state.betIdx,
         balance: this.state.balance,
+        anteBet: this.state.anteBet,
       }));
     } catch (_) {}
+  },
+
+  // Effective bet = base bet × 1.25 saat Ante Bet ON. Dipakai oleh:
+  //   - spin() balance deduction
+  //   - WAY_BET_DIVISOR calculation di ways.js (this.state.bet passed in)
+  //   - buy feature cost
+  effectiveBet() {
+    return this.state.anteBet ? Math.round(this.state.bet * ANTE_BET_MULT) : this.state.bet;
   },
 
   prebootSettings() {
@@ -241,6 +252,7 @@ const Game = {
     });
     this.wirePickers();
     this.wireBuyFeature();
+    this.wireAnteBet();
 
     const info = document.getElementById('btn-info');
     if (info) info.addEventListener('click', () => this.togglePaytable());
@@ -542,15 +554,16 @@ const Game = {
 
     const inBonus = FreeSpin.active;
     if (!inBonus) {
-      if (this.state.balance < this.state.bet) {
+      const eBet = this.effectiveBet();
+      if (this.state.balance < eBet) {
         // Proper insufficient-balance dialog instead of silent refund.
         // Offers: lower bet (auto pick lowest level player can afford) or top-up via admin.
         this._showInsufficientBalanceDialog();
         return;
       }
-      this.state.balance -= this.state.bet;
+      this.state.balance -= eBet;
       this.state.stats.spins += 1;
-      this.state.stats.totalBet += this.state.bet;
+      this.state.stats.totalBet += eBet;
       this.savePlayerPrefs(); // persist new balance (bet deducted)
     }
     // Cancel any in-flight win counter animation from the previous spin before
@@ -597,6 +610,8 @@ const Game = {
       this.updateMultiplierBadges();
     }
 
+    // Sync ante-bet flag so Reels.randomSymbol can boost scatter weight.
+    Reels._anteBet = this.state.anteBet;
     let grid = await Reels.spin(this.state.turbo);
     // Defensive: if a concurrent spin somehow slipped past the spinning guard,
     // Reels.spin() resolves with null instead of a grid. Refund the bet and
@@ -614,8 +629,10 @@ const Game = {
     // Catrina ALWAYS stays single-cell where it lands, both base spin AND free
     // spin. The only mechanic that spawns wilds is Gold-Framed → Wild conversion.
 
-    // Initial evaluation
-    let result = evaluateWays(grid, this.state.bet);
+    // Initial evaluation — use effective bet so Ante Bet's extra 25% is reflected
+    // in payout (player pays more, win amount also scales by the same factor).
+    const _evalBet = this.effectiveBet();
+    let result = evaluateWays(grid, _evalBet);
     const scatterCount = countScatters(grid);
     const initialHadWin = result.totalWin > 0;
 
@@ -673,7 +690,7 @@ const Game = {
       Audio.multBump(Multiplier.current);
 
       // 7. Re-evaluate fresh grid for next cascade
-      result = evaluateWays(Reels.grid, this.state.bet);
+      result = evaluateWays(Reels.grid, _evalBet);
       cascadeIter++;
       // E2: ramp music intensity AFTER each cascade completes (layers stack progressively)
       Audio.setCascadeIntensity?.(cascadeIter);
@@ -1191,6 +1208,28 @@ const Game = {
     if (plus) plus.disabled = this.state.betIdx === maxIdx;
   },
 
+  // Ante Bet toggle: click button → flip state, refresh UI, persist, sync to Reels.
+  wireAnteBet() {
+    const btn = document.getElementById('btn-ante-bet');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      if (FreeSpin.active || Reels.spinning) return;
+      this.state.anteBet = !this.state.anteBet;
+      this.updateAnteBetUI();
+      this.updateHUD();
+      this.savePlayerPrefs();
+      Audio.uiTap?.(this.state.anteBet ? 1.4 : 1);
+    });
+    this.updateAnteBetUI();
+  },
+  updateAnteBetUI() {
+    const btn = document.getElementById('btn-ante-bet');
+    if (!btn) return;
+    btn.classList.toggle('active', !!this.state.anteBet);
+    const state = btn.querySelector('.ab-state');
+    if (state) state.textContent = this.state.anteBet ? 'ON' : 'OFF';
+  },
+
   wireBuyFeature() {
     const BUY_COST_MULT = 75; // 75× bet to buy free spin feature
     const btn = document.getElementById('btn-buy-feature');
@@ -1470,7 +1509,13 @@ const Game = {
       }
       this._animateCounter(balEl, cur, target, 700);
     }
-    if (betEl) betEl.textContent = fmtMoney(this.state.bet);
+    if (betEl) {
+      // Saat Ante Bet ON, tampilkan effective bet supaya pemain tahu jumlah
+      // yang sebenarnya dipotong tiap spin. Tetap base bet kalau OFF.
+      const displayBet = this.state.anteBet ? this.effectiveBet() : this.state.bet;
+      betEl.textContent = fmtMoney(displayBet);
+      betEl.classList.toggle('bet-ante-on', !!this.state.anteBet);
+    }
   },
 
   // Dramatic win display: rolls 0 → amount, pulses, color-shifts on big wins.

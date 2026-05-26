@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 import { GlowFilter } from '@pixi/filter-glow';
 import { GodrayFilter } from '@pixi/filter-godray';
-import { GAME_CONFIG, SYMBOLS, REEL_WEIGHTS, ASSET_PATH } from './config.js';
+import { GAME_CONFIG, SYMBOLS, REEL_WEIGHTS, ASSET_PATH, ANTE_BET_SCATTER_BOOST } from './config.js';
 import { Difficulty } from './difficulty.js';
 import { Audio } from './audio.js';
 import { isWild, isScatter } from './ways.js';
@@ -724,7 +724,9 @@ export const Reels = {
     const adjusted = {};
     let total = 0;
     for (const [id, w] of Object.entries(baseWeights)) {
-      const adj = Difficulty.weightFor(id, w);
+      let adj = Difficulty.weightFor(id, w);
+      // Ante Bet boost: scatter (COFFIN) weight × N → free spin trigger lebih sering
+      if (this._anteBet && id === 'COFFIN') adj *= ANTE_BET_SCATTER_BOOST;
       adjusted[id] = adj;
       total += adj;
     }
