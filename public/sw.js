@@ -6,7 +6,7 @@
 //
 // To bump cache (after a release), change CACHE_VERSION.
 
-const CACHE_VERSION = 'calavera-v1.1.0';
+const CACHE_VERSION = 'calavera-v1.2.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
