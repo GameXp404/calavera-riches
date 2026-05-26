@@ -58,9 +58,18 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
   const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
-  // Text scale factor: design width is 577. On narrow phones (A06 stage-local W ~306)
-  // we clamp to 0.55 so "FREE SPINS!" still fits without horizontal clipping.
-  const tScale = Math.max(0.55, Math.min(1, W / 577));
+  // Text scale factor: design width is 577. On narrow phones we shrink so titles fit.
+  const tScale = Math.max(0.45, Math.min(1, W / 577));
+  // After creating a text, shrink fontSize if rendered width exceeds maxWidth.
+  // PIXI measures stroke + letter-spacing + dropShadow into .width, which canvas
+  // measureText doesn't capture — so the only reliable check is post-create.
+  const fitTextWidth = (textNode, maxWidth) => {
+    if (textNode.width > maxWidth) {
+      const ratio = (maxWidth / textNode.width) * 0.98;
+      textNode.style.fontSize = textNode.style.fontSize * ratio;
+    }
+  };
+  const titleMaxW = W * 0.92;
   // Tier mapping for particle counts (more scatter = bigger celebration)
   const tier = scatterCount >= 5 ? 'LEGENDARY' : scatterCount >= 4 ? 'EPIC' : 'MEGA';
 
@@ -143,6 +152,7 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
     dropShadow: true, dropShadowColor: '#000000', dropShadowBlur: 12, dropShadowDistance: 5,
     letterSpacing: 3 * tScale,
   }));
+  fitTextWidth(title, titleMaxW);
   title.anchor.set(0.5);
   title.x = cx;
   title.y = titleSettleY - 70;
@@ -159,6 +169,7 @@ export function showTransitionIntro(app, stage, scatterCount, award, startMult, 
       letterSpacing: 1.5 * tScale,
     })
   );
+  fitTextWidth(detail, titleMaxW);
   detail.anchor.set(0.5);
   detail.x = cx;
   detail.y = cy + 170;
@@ -251,8 +262,15 @@ export function showSummary(app, stage, summary, onComplete) {
   const H = app.screen.height / stageScale;
   const cx = W / 2, cy = H / 2;
   const stageOriginX = stage.x, stageOriginY = stage.y;
-  // Text scale factor — same as showTransitionIntro: clamp at 0.55 so titles fit on narrow phones.
-  const tScale = Math.max(0.55, Math.min(1, W / 577));
+  // Same fit-to-width helper as showTransitionIntro.
+  const tScale = Math.max(0.45, Math.min(1, W / 577));
+  const fitTextWidth = (textNode, maxWidth) => {
+    if (textNode.width > maxWidth) {
+      const ratio = (maxWidth / textNode.width) * 0.98;
+      textNode.style.fontSize = textNode.style.fontSize * ratio;
+    }
+  };
+  const titleMaxW = W * 0.92;
   // Tier — use EPIC for moderate celebration, LEGENDARY if big totalWon (>100x bet typically)
   const totalWon = summary.totalWon || 0;
   const tier = totalWon >= 5000 ? 'LEGENDARY' : 'EPIC';
@@ -312,6 +330,7 @@ export function showSummary(app, stage, summary, onComplete) {
     dropShadow: true, dropShadowColor: '#000000', dropShadowBlur: 10, dropShadowDistance: 4,
     letterSpacing: 2.5 * tScale,
   }));
+  fitTextWidth(title, titleMaxW);
   title.anchor.set(0.5);
   title.x = cx;
   title.y = titleSettleY - 60;
@@ -324,6 +343,7 @@ export function showSummary(app, stage, summary, onComplete) {
     fontFamily: 'Cinzel, Georgia', fontSize: 22 * tScale, fontWeight: 'bold',
     fill: '#7dcea0', stroke: '#1a3a30', strokeThickness: 3, letterSpacing: 2 * tScale,
   }));
+  fitTextWidth(totalText, titleMaxW);
   totalText.anchor.set(0.5);
   totalText.x = cx; totalText.y = cy - 25;
   totalText.alpha = 0;
