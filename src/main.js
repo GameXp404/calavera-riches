@@ -2023,12 +2023,28 @@ function setupLoginUI() {
   document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
   document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
   const logoutBtn = document.getElementById('btn-logout');
-  if (logoutBtn) logoutBtn.addEventListener('click', () => {
-    if (confirm('Logout sekarang?')) {
-      localStorage.removeItem(LOGIN_KEY);
-      location.reload();
+  if (logoutBtn) {
+    // Re-label if user came from lobby
+    if (localStorage.getItem('calavera_lobby_token')) {
+      const iconEl = logoutBtn.querySelector('.action-icon');
+      const labelEl = logoutBtn.querySelector('.action-label');
+      if (iconEl) iconEl.textContent = '🏠';
+      if (labelEl) labelEl.textContent = 'Lobby';
+      logoutBtn.title = 'Kembali ke Lobby';
     }
-  });
+    logoutBtn.addEventListener('click', () => {
+      // If user came from lobby (has lobby token), redirect back to lobby instead
+      // of showing local login screen.
+      if (localStorage.getItem('calavera_lobby_token')) {
+        window.location.href = '/lobby';
+        return;
+      }
+      if (confirm('Logout sekarang?')) {
+        localStorage.removeItem(LOGIN_KEY);
+        location.reload();
+      }
+    });
+  }
   // Gear button on login screen opens the admin/settings panel
   const loginGear = document.getElementById('login-settings-btn');
   if (loginGear) loginGear.addEventListener('click', () => {
@@ -2064,11 +2080,32 @@ function setupMainMenuUI() {
     document.getElementById('admin-panel').classList.remove('hidden');
     if (Game._adminRefresh) Game._adminRefresh();
   });
-  if (quit) quit.addEventListener('click', () => {
-    if (!confirm('Keluar dari game? (Logout)')) return;
-    localStorage.removeItem(LOGIN_KEY);
-    location.reload();
-  });
+  if (quit) {
+    // Re-label + change behavior if user came from lobby (has lobby token)
+    if (localStorage.getItem('calavera_lobby_token')) {
+      quit.title = 'Kembali ke Lobby';
+      quit.innerHTML = '🏠';
+    }
+    quit.addEventListener('click', () => {
+      // From lobby → just redirect back (no logout)
+      if (localStorage.getItem('calavera_lobby_token')) {
+        window.location.href = '/lobby';
+        return;
+      }
+      if (!confirm('Keluar dari game? (Logout)')) return;
+      localStorage.removeItem(LOGIN_KEY);
+      location.reload();
+    });
+  }
+
+  // BACK TO LOBBY button (always visible during gameplay when from lobby session)
+  const backLobbyBtn = document.getElementById('btn-back-lobby');
+  if (backLobbyBtn) {
+    if (localStorage.getItem('calavera_lobby_token')) {
+      backLobbyBtn.classList.remove('hidden');
+      backLobbyBtn.addEventListener('click', () => { window.location.href = '/lobby'; });
+    }
+  }
 
   // PERATURAN: open paytable (need game initialized for info modal to render)
   if (paytable) paytable.addEventListener('click', () => {

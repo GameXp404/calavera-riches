@@ -3931,3 +3931,29 @@ body:has(#freespin-badge) #marquee-banner { display: none; }
   .jp-pill .jp-amount { font-size: 10px; }
   .jackpot-hud { gap: 3px; padding: 4px 4px 1px; }
 }
+
+/* Back to Lobby button (shown when user came from /lobby) */
+.back-lobby-btn {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  z-index: 200;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px 8px 10px;
+  background: linear-gradient(180deg, #ffd24d 0%, #d4a017 100%);
+  color: #1a0a1f;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 22px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px; font-weight: 800; letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+.back-lobby-btn.hidden { display: none; }
+.back-lobby-btn:active { transform: translateY(1px); }
+.back-lobby-btn:hover { filter: brightness(1.08); }
+@media (max-width: 480px) {
+  .back-lobby-btn { padding: 6px 12px 6px 8px; font-size: 10px; gap: 4px; }
+  .back-lobby-btn .back-lobby-label { display: none; }
+}
