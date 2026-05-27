@@ -225,6 +225,9 @@
       <button id="add-user-btn">➕ Tambah User</button>
       <button id="refresh-btn">↻ Refresh</button>
       <button id="export-btn">📥 Export JSON</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="show-deleted"> Tampilkan user terhapus
+      </label>
       <button id="delete-all-btn" class="danger">🗑 Hapus Semua</button>
     </div>
     <table>
@@ -453,8 +456,8 @@
   // ============================================================
   async function getAllUsers() {
     try {
-      const data = await api('/api/admin/users');
-      // Map API field names → existing UI field names (snake_case → camelCase)
+      const includeDeleted = $('show-deleted')?.checked ? '?include_deleted=1' : '';
+      const data = await api('/api/admin/users' + includeDeleted);
       return (data.users || []).map((u) => ({
         username: u.username,
         balance: Number(u.balance) || 0,
@@ -465,6 +468,8 @@
         frozen: !!u.frozen,
         pendingBonus: Number(u.pending_bonus_amount) || 0,
         hasPassword: !!u.hasPassword,
+        isDeleted: !!u.isDeleted,
+        deletedAt: u.deleted_at || null,
         registeredAt: u.registered_at || null,
         lastLogin: u.last_login || null,
         lastSpin: u.last_spin || null,
@@ -603,30 +608,62 @@
     const netClass = net >= 0 ? 'pl-pos' : 'pl-neg';
     const freezeStatus = u.frozen ? ' <span style="color:#7ec8ff;font-size:10px;">❄️</span>' : '';
     const bonusStatus = u.pendingBonus > 0 ? ' <span style="color:var(--accent);font-size:10px;">🎁+' + fmtMoney(u.pendingBonus) + '</span>' : '';
-    tr.innerHTML = `
-      <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}${freezeStatus}${bonusStatus}</td>
-      <td style="font-size:13px;text-align:center;">${pwStatus}</td>
-      <td class="num"><input type="number" class="balance-input" value="${u.balance}" min="0" step="1000"></td>
-      <td class="num">${fmtMoney(u.spins)}</td>
-      <td class="num ${netClass}">${net >= 0 ? '+' : ''}${fmtMoney(net)}</td>
-      <td style="font-size:11px;color:var(--muted);">${fmtRelTime(u.lastLogin)}</td>
-      <td class="actions">
+    const deletedStatus = u.isDeleted ? ' <span style="color:var(--danger);font-size:10px;">🗑 dihapus ' + fmtRelTime(u.deletedAt) + '</span>' : '';
+    if (u.isDeleted) tr.style.opacity = '0.5';
+
+    // Actions: deleted users get RESTORE + PURGE; active users get standard set
+    const actionsHTML = u.isDeleted ? `
+        <button class="btn-restore" title="Pulihkan user">♻️</button>
+        <button class="btn-purge" title="Hapus permanen (purge)">💥</button>
+      ` : `
         <button class="btn-save">💾</button>
         <button class="btn-pass">🔑</button>
         <button class="btn-bonus" title="Send bonus">🎁</button>
         <button class="btn-freeze" title="${u.frozen ? 'Unfreeze' : 'Freeze'}">${u.frozen ? '☀️' : '❄️'}</button>
         <button class="btn-reset" title="Reset stats">🔄</button>
-        <button class="btn-delete" title="Hapus user">🗑</button>
-      </td>
+        <button class="btn-delete" title="Hapus (soft delete)">🗑</button>
+      `;
+    tr.innerHTML = `
+      <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}${freezeStatus}${bonusStatus}${deletedStatus}</td>
+      <td style="font-size:13px;text-align:center;">${pwStatus}</td>
+      <td class="num">${u.isDeleted ? fmtMoney(u.balance) : '<input type="number" class="balance-input" value="' + u.balance + '" min="0" step="1000">'}</td>
+      <td class="num">${fmtMoney(u.spins)}</td>
+      <td class="num ${netClass}">${net >= 0 ? '+' : ''}${fmtMoney(net)}</td>
+      <td style="font-size:11px;color:var(--muted);">${fmtRelTime(u.lastLogin)}</td>
+      <td class="actions">${actionsHTML}</td>
     `;
-    const input = tr.querySelector('.balance-input');
-    tr.querySelector('.btn-save').addEventListener('click', () => saveBalance(u.username, input));
-    tr.querySelector('.btn-pass').addEventListener('click', () => setPassword(u.username));
-    tr.querySelector('.btn-bonus').addEventListener('click', () => sendBonus(u.username));
-    tr.querySelector('.btn-freeze').addEventListener('click', () => toggleFreeze(u.username, !u.frozen));
-    tr.querySelector('.btn-reset').addEventListener('click', () => resetStats(u.username));
-    tr.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
+    if (!u.isDeleted) {
+      const input = tr.querySelector('.balance-input');
+      tr.querySelector('.btn-save').addEventListener('click', () => saveBalance(u.username, input));
+      tr.querySelector('.btn-pass').addEventListener('click', () => setPassword(u.username));
+      tr.querySelector('.btn-bonus').addEventListener('click', () => sendBonus(u.username));
+      tr.querySelector('.btn-freeze').addEventListener('click', () => toggleFreeze(u.username, !u.frozen));
+      tr.querySelector('.btn-reset').addEventListener('click', () => resetStats(u.username));
+      tr.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
+    } else {
+      tr.querySelector('.btn-restore').addEventListener('click', () => restoreUser(u.username));
+      tr.querySelector('.btn-purge').addEventListener('click', () => purgeUser(u.username));
+    }
     return tr;
+  }
+
+  async function restoreUser(username) {
+    if (!confirm(`Pulihkan user "${username}"?\n\nUser akan bisa login lagi dengan data lama (balance, password, stats).`)) return;
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, action: 'restore' } });
+      toast(`User ${username} dipulihkan`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
+  }
+
+  async function purgeUser(username) {
+    if (!confirm(`PURGE user "${username}" PERMANENT?\n\nUsername akan dibebaskan lagi (orang lain bisa register pakai nama ini).\n\nIni TIDAK BISA di-undo!`)) return;
+    if (!confirm('Konfirmasi sekali lagi — purge permanen?')) return;
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, action: 'purge' } });
+      toast(`User ${username} di-purge permanen`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   async function sendBonus(username) {
@@ -697,16 +734,17 @@
   }
 
   async function deleteUser(username) {
-    if (!confirm(`Hapus user "${username}" beserta SEMUA data?\n\nTidak bisa di-undo!`)) return;
+    if (!confirm(`Hapus user "${username}"?\n\n• User tidak bisa login lagi\n• Data DISIMPAN (bisa di-restore)\n• Username DITAHAN (orang lain tidak bisa register pakai nama yang sama)\n\nLanjut?`)) return;
     try {
       await api('/api/admin/users', { method: 'PATCH', body: { username, action: 'delete' } });
-      toast(`User ${username} dihapus`, 'success');
+      toast(`User ${username} dihapus (soft delete)`, 'success');
       await refresh();
     } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   $('refresh-btn').addEventListener('click', refresh);
   $('search-input').addEventListener('input', refresh);
+  $('show-deleted')?.addEventListener('change', refresh);
   $('add-user-btn').addEventListener('click', addUser);
   $('clear-log-btn').addEventListener('click', async () => {
     if (!confirm('Hapus semua big win log?')) return;

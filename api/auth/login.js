@@ -17,9 +17,9 @@ export default async function handler(req, res) {
     .from('settings').select('value').eq('key', 'maintenance').single();
   if (maint?.value === true) return jsonError(res, 503, '🚧 Game sedang maintenance');
 
-  // Fetch player
+  // Fetch player (case-insensitive, exclude soft-deleted)
   const { data: player, error: fetchErr } = await supabase
-    .from('players').select('*').eq('username', username).maybeSingle();
+    .from('players').select('*').ilike('username', username).is('deleted_at', null).maybeSingle();
   if (fetchErr) return jsonError(res, 500, 'DB error: ' + fetchErr.message);
   if (!player) return jsonError(res, 401, 'Username atau password salah');
 

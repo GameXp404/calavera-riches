@@ -19,10 +19,18 @@ export default async function handler(req, res) {
     .from('settings').select('value').eq('key', 'maintenance').single();
   if (maint?.value === true) return jsonError(res, 503, 'Game sedang maintenance');
 
-  // Check if username already taken
+  // Check if username already taken (case-insensitive, includes soft-deleted)
   const { data: existing } = await supabase
-    .from('players').select('id').eq('username', username).maybeSingle();
-  if (existing) return jsonError(res, 409, `Username "${username}" sudah terdaftar — pakai username lain atau login`);
+    .from('players')
+    .select('id, deleted_at')
+    .ilike('username', username)
+    .maybeSingle();
+  if (existing) {
+    if (existing.deleted_at) {
+      return jsonError(res, 409, `Username "${username}" sudah pernah digunakan dan tidak bisa dipakai lagi. Pilih username lain.`);
+    }
+    return jsonError(res, 409, `Username "${username}" sudah terdaftar — pilih username lain atau login.`);
+  }
 
   // Insert new player
   const passwordHash = hashPassword(password);
