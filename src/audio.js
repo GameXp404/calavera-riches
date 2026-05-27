@@ -708,8 +708,9 @@ export const Audio = {
     winHighlight:     { url: 'assets/audio/win_highlight.mp3',     vol: 0.7  },
     winSmall:         { url: 'assets/audio/win_small.wav',         vol: 0.85 },
     winBig:           { url: 'assets/audio/win_big.wav',           vol: 0.95 },
+    winMega:          { url: 'assets/audio/win_mega.mp3',          vol: 0.95 },
     winEpic:          { url: 'assets/audio/win_epic.mp3',          vol: 1.0  },
-    winLegendary:     { url: 'assets/audio/win_legendary.wav',     vol: 1.0  },
+    winLegendary:     { url: 'assets/audio/win_legendary.mp3',     vol: 1.0  },
     freeSpinTrigger:  { url: 'assets/audio/free_spin_trigger.mp3', vol: 1.0  },
     cascadePop:       { url: 'assets/audio/cascade_pop.wav',       vol: 0.7  },
     anticipation:     { url: 'assets/audio/anticipation.wav',      vol: 0.95 },
@@ -1171,6 +1172,13 @@ export const Audio = {
     ng.gain.linearRampToValueAtTime(0.3, t + 0.005);
     ng.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
     ns.start(t);
+  },
+
+  // WIN mega — sample-first (4s mariachi sting); falls back to winBig synth.
+  winMega() {
+    if (!this.enabled || !this.ctx) return;
+    if (this._playSample('winMega', { reverb: 0.38 })) return;
+    this.winBig(true);
   },
 
   // WIN epic — bigger, dramatic with bass impact (EPIC tier).

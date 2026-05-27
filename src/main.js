@@ -778,7 +778,8 @@ const Game = {
       // Win-tier audio: distinct cue per tier for premium feel
       if (tier === 'LEGENDARY')    Audio.winLegendary();
       else if (tier === 'EPIC')    Audio.winEpic();
-      else if (tier === 'MEGA' || tier === 'BIG') Audio.winBig();
+      else if (tier === 'MEGA')    Audio.winMega();
+      else if (tier === 'BIG')     Audio.winBig();
       else                          Audio.winSmall();
       // Voice announcement (BIG/MEGA/EPIC/LEGENDARY) — sample-first, TTS fallback
       if (tier === 'LEGENDARY' || tier === 'EPIC' || tier === 'MEGA' || tier === 'BIG') {
