@@ -1091,6 +1091,33 @@
 
   // Init
   autoLoginIfToken();
+
+  // Auto-refresh balance when user returns to lobby tab (e.g., back from game).
+  // Also poll every 30s while tab is visible.
+  let _balanceRefreshTimer = null;
+  function startBalanceRefresh() {
+    if (_balanceRefreshTimer) clearInterval(_balanceRefreshTimer);
+    _balanceRefreshTimer = setInterval(() => {
+      if (token && document.visibilityState === 'visible') loadProfile();
+    }, 30000);
+  }
+  function stopBalanceRefresh() {
+    if (_balanceRefreshTimer) clearInterval(_balanceRefreshTimer);
+    _balanceRefreshTimer = null;
+  }
+
+  // Refresh balance on tab visibility change (instant sync when user returns from game)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && token) {
+      loadProfile();
+      startBalanceRefresh();
+    } else {
+      stopBalanceRefresh();
+    }
+  });
+  // Refresh on window focus too
+  window.addEventListener('focus', () => { if (token) loadProfile(); });
+  startBalanceRefresh();
 })();
 </script>
 

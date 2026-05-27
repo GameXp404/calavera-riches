@@ -133,13 +133,18 @@ const Game = {
     const token = this._lobbyToken();
     if (!token) return; // no lobby session → skip
     try {
+      console.log('[sync] POST spin-record', { bet, win, tier, scatterCount, isFreeSpinSpin });
       const res = await fetch('/api/player/spin-record', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ bet, win, tier, scatterCount, isFreeSpinSpin }),
       });
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.warn('[sync] failed', res.status, data);
+        return;
+      }
+      console.log('[sync] OK, server balance:', data.balance);
       // Server returns authoritative balance + stats — override local
       if (typeof data.balance === 'number') this.state.balance = data.balance;
       if (data.stats) {
@@ -150,7 +155,7 @@ const Game = {
       }
       this.updateHUD();
     } catch (e) {
-      console.warn('[spin sync failed]', e);
+      console.warn('[spin sync error]', e);
     }
   },
 
@@ -839,6 +844,8 @@ const Game = {
       }
       this.updateHUD();
       this.savePlayerPrefs(); // persist balance after FS trigger win
+      // Sync FS trigger spin to server (this branch returns before finishSpin)
+      this._syncSpinToServer(_spinBet, multipliedWin || 0, _spinTier, scatterCount, inBonus);
       // E3: switch music — fade out base game music, start dramatic FS music
       Audio.stopGameMusic?.(900);
       Audio.freeSpinTrigger();
