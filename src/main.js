@@ -112,6 +112,12 @@ const Game = {
         this.state.balance = p.balance;
       }
       if (typeof p.anteBet === 'boolean') this.state.anteBet = p.anteBet;
+      if (p.stats && typeof p.stats === 'object') {
+        this.state.stats.spins      = Number(p.stats.spins) || 0;
+        this.state.stats.totalBet   = Number(p.stats.totalBet) || 0;
+        this.state.stats.totalWin   = Number(p.stats.totalWin) || 0;
+        this.state.stats.biggestWin = Number(p.stats.biggestWin) || 0;
+      }
     } catch (_) {}
   },
   savePlayerPrefs() {
@@ -122,6 +128,7 @@ const Game = {
         betIdx: this.state.betIdx,
         balance: this.state.balance,
         anteBet: this.state.anteBet,
+        stats: this.state.stats,
       }));
     } catch (_) {}
   },

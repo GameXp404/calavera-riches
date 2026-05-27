@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Calavera Admin Panel</title>
+<style>
+  :root {
+    --bg: #1a0a1f;
+    --bg2: #2a1430;
+    --fg: #f5e6d3;
+    --accent: #ffb84d;
+    --accent2: #c44d3b;
+    --danger: #d9534f;
+    --success: #4d9d6b;
+    --muted: #8a7a8a;
+    --card: #2f1a35;
+    --border: #4a2b50;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: linear-gradient(180deg, var(--bg) 0%, #0d050f 100%); color: var(--fg); font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh; }
+  header { background: linear-gradient(180deg, #3a1a44 0%, #2a1030 100%); padding: 16px 24px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: 2px; color: var(--accent); }
+  header .meta { font-size: 12px; color: var(--muted); }
+  main { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+  .login-screen { max-width: 360px; margin: 80px auto; padding: 32px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+  .login-screen h2 { margin: 0 0 16px; text-align: center; color: var(--accent); }
+  .login-screen input { width: 100%; padding: 12px; background: #0d050f; color: var(--fg); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 12px; }
+  .login-screen button { width: 100%; padding: 12px; background: var(--accent); color: #1a0a1f; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; letter-spacing: 1px; }
+  .login-screen button:hover { background: #ffc875; }
+  .login-screen .err { color: var(--danger); font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  .login-screen .hint { font-size: 11px; color: var(--muted); margin-top: 12px; text-align: center; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar input { padding: 8px 12px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 200px; }
+  .toolbar button { padding: 8px 14px; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .toolbar button:hover { background: var(--accent); color: #1a0a1f; }
+  .toolbar button.danger { background: #4a1a1a; }
+  .toolbar button.danger:hover { background: var(--danger); }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat-card { flex: 1; min-width: 140px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-card .val { font-size: 20px; color: var(--accent); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  thead { background: #1f0d24; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { color: var(--accent); font-weight: 600; letter-spacing: 0.5px; }
+  tr:last-child td { border-bottom: none; }
+  tr.active-user { background: rgba(255, 184, 77, 0.08); }
+  .user-cell { font-weight: 600; color: var(--accent); }
+  .balance-input { width: 110px; padding: 6px 8px; background: #0d050f; color: var(--fg); border: 1px solid var(--border); border-radius: 4px; font-size: 13px; text-align: right; }
+  .actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+  .actions button { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; }
+  .btn-save { background: var(--success); color: white; }
+  .btn-save:hover { background: #5cb27a; }
+  .btn-reset { background: #555; color: white; }
+  .btn-reset:hover { background: #777; }
+  .btn-delete { background: var(--danger); color: white; }
+  .btn-delete:hover { background: #e96a66; }
+  .empty { padding: 32px; text-align: center; color: var(--muted); font-style: italic; }
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 6px; color: white; font-size: 13px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.5); opacity: 0; transition: opacity .25s, transform .25s; transform: translateY(20px); }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .footer-note { margin-top: 24px; padding: 12px; background: #0d050f; border-left: 3px solid var(--accent2); font-size: 12px; color: var(--muted); border-radius: 4px; }
+  .footer-note strong { color: var(--accent); }
+  .small-btn { padding: 4px 8px; font-size: 11px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+  .small-btn:hover { color: var(--fg); border-color: var(--accent); }
+  @media (max-width: 720px) {
+    header { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
+    header h1 { font-size: 16px; }
+    th, td { padding: 6px 8px; font-size: 11px; }
+    .balance-input { width: 80px; }
+    .actions button { padding: 4px 6px; font-size: 10px; }
+    .stat-card { min-width: 100px; padding: 8px 12px; }
+    .stat-card .val { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <h2>🔒 ADMIN LOGIN</h2>
+  <input id="adm-pass" type="password" placeholder="Password admin..." autocomplete="off">
+  <div id="adm-err" class="err"></div>
+  <button id="adm-login-btn">MASUK</button>
+  <div class="hint">Akses dibatasi. Default password: admin123</div>
+</div>
+
+<div id="dashboard" style="display:none;">
+  <header>
+    <h1>🎰 CALAVERA ADMIN</h1>
+    <div class="meta">
+      <span id="hdr-count">0 user</span> · <span id="hdr-now"></span>
+      <button id="adm-logout" class="small-btn" style="margin-left:12px;">Logout</button>
+    </div>
+  </header>
+  <main>
+    <div class="stat-row">
+      <div class="stat-card"><div class="label">Total User</div><div class="val" id="stat-users">0</div></div>
+      <div class="stat-card"><div class="label">Total Balance</div><div class="val" id="stat-balance">0</div></div>
+      <div class="stat-card"><div class="label">Total Spin</div><div class="val" id="stat-spins">0</div></div>
+      <div class="stat-card"><div class="label">Total Bet</div><div class="val" id="stat-totalbet">0</div></div>
+    </div>
+    <div class="toolbar">
+      <input id="search-input" placeholder="🔍 Cari username...">
+      <button id="refresh-btn">↻ Refresh</button>
+      <button id="export-btn">📥 Export JSON</button>
+      <button id="delete-all-btn" class="danger">🗑 Hapus Semua</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th class="num">Balance (Rp)</th>
+          <th class="num">Spin</th>
+          <th class="num">Total Bet</th>
+          <th class="num">Total Win</th>
+          <th class="num">Biggest Win</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="user-rows"></tbody>
+    </table>
+    <div id="empty-state" class="empty" style="display:none;">Belum ada user. Login ke game dulu untuk membuat data.</div>
+    <div class="footer-note">
+      <strong>Catatan:</strong> Data dibaca dari <em>localStorage browser ini saja</em>. Setiap device punya data terpisah (tidak ada server backend). Admin di HP-mu tidak melihat user di HP lain.
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+  const ADMIN_PASS = 'admin123';
+  const SESSION_KEY = 'calavera_admin_session';
+  const PLAYER_KEY_RE = /^calavera_([a-zA-Z0-9_\-]+)_player$/;
+
+  const fmtMoney = (n) => Math.floor(Number(n) || 0).toLocaleString('id-ID');
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg, type = 'success') {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function isLoggedIn() {
+    return sessionStorage.getItem(SESSION_KEY) === '1';
+  }
+
+  function showDashboard() {
+    $('login-screen').style.display = 'none';
+    $('dashboard').style.display = 'block';
+    refresh();
+    $('hdr-now').textContent = new Date().toLocaleString('id-ID');
+  }
+
+  function tryLogin() {
+    const pass = $('adm-pass').value;
+    if (pass === ADMIN_PASS) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      $('adm-err').textContent = '';
+      showDashboard();
+    } else {
+      $('adm-err').textContent = 'Password salah!';
+      $('adm-pass').value = '';
+    }
+  }
+
+  $('adm-login-btn').addEventListener('click', tryLogin);
+  $('adm-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+  $('adm-logout').addEventListener('click', () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+
+  function getAllUsers() {
+    const users = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const m = key?.match(PLAYER_KEY_RE);
+      if (!m) continue;
+      const username = m[1];
+      let data;
+      try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+      const stats = data.stats || {};
+      users.push({
+        username,
+        balance: Number(data.balance) || 0,
+        turbo: Number(data.turbo) || 0,
+        betIdx: Number(data.betIdx) || 0,
+        anteBet: !!data.anteBet,
+        spins: Number(stats.spins) || 0,
+        totalBet: Number(stats.totalBet) || 0,
+        totalWin: Number(stats.totalWin) || 0,
+        biggestWin: Number(stats.biggestWin) || 0,
+      });
+    }
+    users.sort((a, b) => b.balance - a.balance);
+    return users;
+  }
+
+  function activeUser() {
+    return localStorage.getItem('calavera_user') || '';
+  }
+
+  function refresh() {
+    const users = getAllUsers();
+    const active = activeUser();
+    const tbody = $('user-rows');
+    tbody.innerHTML = '';
+    const search = ($('search-input').value || '').trim().toLowerCase();
+    const filtered = search ? users.filter(u => u.username.toLowerCase().includes(search)) : users;
+
+    if (filtered.length === 0) {
+      $('empty-state').style.display = 'block';
+    } else {
+      $('empty-state').style.display = 'none';
+      filtered.forEach((u) => tbody.appendChild(renderRow(u, u.username === active)));
+    }
+
+    let totalBal = 0, totalSpin = 0, totalBet = 0;
+    users.forEach((u) => { totalBal += u.balance; totalSpin += u.spins; totalBet += u.totalBet; });
+    $('stat-users').textContent = users.length;
+    $('stat-balance').textContent = fmtMoney(totalBal);
+    $('stat-spins').textContent = fmtMoney(totalSpin);
+    $('stat-totalbet').textContent = fmtMoney(totalBet);
+    $('hdr-count').textContent = users.length + ' user';
+  }
+
+  function renderRow(u, isActive) {
+    const tr = document.createElement('tr');
+    if (isActive) tr.className = 'active-user';
+    const safe = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+    tr.innerHTML = `
+      <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}</td>
+      <td class="num"><input type="number" class="balance-input" value="${u.balance}" min="0" step="1000"></td>
+      <td class="num">${fmtMoney(u.spins)}</td>
+      <td class="num">${fmtMoney(u.totalBet)}</td>
+      <td class="num">${fmtMoney(u.totalWin)}</td>
+      <td class="num">${fmtMoney(u.biggestWin)}</td>
+      <td class="actions">
+        <button class="btn-save">Simpan</button>
+        <button class="btn-reset">Reset Stats</button>
+        <button class="btn-delete">Hapus</button>
+      </td>
+    `;
+    const input = tr.querySelector('.balance-input');
+    tr.querySelector('.btn-save').addEventListener('click', () => saveBalance(u.username, input));
+    tr.querySelector('.btn-reset').addEventListener('click', () => resetStats(u.username));
+    tr.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
+    return tr;
+  }
+
+  function saveBalance(username, input) {
+    const newBal = parseInt(input.value, 10);
+    if (!Number.isFinite(newBal) || newBal < 0) {
+      toast('Balance tidak valid', 'error');
+      return;
+    }
+    const key = `calavera_${username}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    data.balance = newBal;
+    localStorage.setItem(key, JSON.stringify(data));
+    toast(`Balance ${username} disimpan: Rp ${fmtMoney(newBal)}`, 'success');
+    refresh();
+  }
+
+  function resetStats(username) {
+    if (!confirm(`Reset semua stats user "${username}"?\n\n(balance TIDAK diubah, hanya spins/totalBet/totalWin/biggestWin)`)) return;
+    const key = `calavera_${username}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    data.stats = { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 };
+    localStorage.setItem(key, JSON.stringify(data));
+    toast(`Stats ${username} di-reset`, 'success');
+    refresh();
+  }
+
+  function deleteUser(username) {
+    if (!confirm(`Hapus user "${username}" beserta SEMUA data (balance, stats, auto-config)?\n\nTidak bisa di-undo!`)) return;
+    localStorage.removeItem(`calavera_${username}_player`);
+    localStorage.removeItem(`calavera_${username}_auto`);
+    if (activeUser() === username) {
+      localStorage.removeItem('calavera_user');
+    }
+    toast(`User ${username} dihapus`, 'success');
+    refresh();
+  }
+
+  $('refresh-btn').addEventListener('click', refresh);
+  $('search-input').addEventListener('input', refresh);
+
+  $('export-btn').addEventListener('click', () => {
+    const users = getAllUsers();
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), users }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calavera-users-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(`Export ${users.length} user`, 'success');
+  });
+
+  $('delete-all-btn').addEventListener('click', () => {
+    const users = getAllUsers();
+    if (users.length === 0) { toast('Tidak ada user untuk dihapus', 'error'); return; }
+    if (!confirm(`HAPUS SEMUA ${users.length} user?\n\nIni akan menghapus:\n- Balance & stats semua user\n- Auto-spin config\n- Session aktif\n\nTidak bisa di-undo!`)) return;
+    if (!confirm('Konfirmasi sekali lagi — yakin hapus SEMUA?')) return;
+    users.forEach((u) => {
+      localStorage.removeItem(`calavera_${u.username}_player`);
+      localStorage.removeItem(`calavera_${u.username}_auto`);
+    });
+    localStorage.removeItem('calavera_user');
+    toast(`${users.length} user dihapus`, 'success');
+    refresh();
+  });
+
+  if (isLoggedIn()) showDashboard();
+  else $('adm-pass').focus();
+})();
+</script>
+
+</body>
+</html>
