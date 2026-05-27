@@ -37,9 +37,10 @@ export const Audio = {
     this.sfxGain = this.ctx.createGain();
     this.sfxGain.gain.value = this.sfxVol;
     this.sfxGain.connect(this.masterGain);
-    // Separate gain for music so it can be ducked/faded independently
+    // Separate gain for music so it can be ducked/faded independently.
+    // Default 0.28 — audible as ambient layer but doesn't compete with SFX.
     this.musicGain = this.ctx.createGain();
-    this.musicGain.gain.value = 0.18;
+    this.musicGain.gain.value = 0.28;
     this.musicGain.connect(this.masterGain);
     this._loginMusic = null;
 
@@ -303,6 +304,16 @@ export const Audio = {
       { root: 98.00,  notes: [196.00, 246.94, 293.66] }, // G:  G B D
     ];
 
+    // Trumpet melody pattern — characteristic mariachi flavor.
+    // Pentatonic-ish phrase per chord (relative to root). Values in semitone offsets.
+    const trumpetPhrases = [
+      [0, 7, 12, 7, 4, 7, 12, 0],  // D: D A D' A F# A D' D
+      [0, 4, 7, 12, 7, 4, 0, 7],   // A: A C# E A' E C# A E
+      [0, 3, 7, 10, 7, 3, 0, 3],   // Bm: B D F# A F# D B D
+      [0, 4, 7, 12, 7, 4, 7, 12],  // G: G B D G' D B D G'
+    ];
+    const semitoneToFreq = (root, semi) => root * Math.pow(2, semi / 12);
+
     const scheduleLoop = (offset) => {
       chords.forEach((ch, idx) => {
         const tStart = start + offset + idx * chordDur;
@@ -320,7 +331,7 @@ export const Audio = {
         bassOsc.start(tStart);
         bassOsc.stop(tStart + chordDur + 0.1);
 
-        // SOFT arpeggio (triangle, very gentle pluck)
+        // SOFT arpeggio (triangle, very gentle pluck) — guitar-like rhythm chord
         ch.notes.forEach((freq, n) => {
           const tNote = tStart + n * beat * 1.3;
           const osc = ctx.createOscillator();
@@ -328,12 +339,64 @@ export const Audio = {
           osc.type = 'triangle';
           osc.frequency.value = freq;
           gain.gain.setValueAtTime(0.0001, tNote);
-          gain.gain.exponentialRampToValueAtTime(0.16, tNote + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.18, tNote + 0.01);
           gain.gain.exponentialRampToValueAtTime(0.0001, tNote + beat * 1.2);
           osc.connect(gain).connect(dest);
           osc.start(tNote);
           osc.stop(tNote + beat * 1.3);
         });
+
+        // TRUMPET melody — mariachi signature lead with vibrato + soft attack.
+        // Plays 8 notes across the bar (eighth notes).
+        const phrase = trumpetPhrases[idx];
+        const trumpetRoot = ch.root * 4; // 2 octaves up — trumpet register
+        phrase.forEach((semi, n) => {
+          const tNote = tStart + n * (beat / 2);
+          const noteDur = beat * 0.45;
+          const freq = semitoneToFreq(trumpetRoot, semi);
+          const osc = ctx.createOscillator();
+          const filter = ctx.createBiquadFilter();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = freq;
+          // Vibrato — characteristic trumpet warble
+          const lfo = ctx.createOscillator();
+          const lfoGain = ctx.createGain();
+          lfo.frequency.value = 5.5;
+          lfoGain.gain.value = freq * 0.008;
+          lfo.connect(lfoGain).connect(osc.frequency);
+          // Bright filter (brass-like)
+          filter.type = 'lowpass';
+          filter.frequency.value = 2400;
+          filter.Q.value = 4;
+          osc.connect(filter).connect(gain).connect(dest);
+          // Soft attack envelope
+          gain.gain.setValueAtTime(0.0001, tNote);
+          gain.gain.exponentialRampToValueAtTime(0.12, tNote + 0.02);
+          gain.gain.linearRampToValueAtTime(0.1, tNote + noteDur * 0.7);
+          gain.gain.exponentialRampToValueAtTime(0.0001, tNote + noteDur);
+          osc.start(tNote); osc.stop(tNote + noteDur + 0.05);
+          lfo.start(tNote); lfo.stop(tNote + noteDur + 0.05);
+        });
+
+        // MARACAS shake on off-beats — subtle Mexican percussion
+        for (let n = 0; n < 8; n++) {
+          if (n % 2 === 0) continue; // off-beats only (8th note pattern)
+          const tHit = tStart + n * (beat / 2);
+          const buf = ctx.createBuffer(1, 0.05 * ctx.sampleRate, ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.3));
+          const noise = ctx.createBufferSource();
+          const nf = ctx.createBiquadFilter();
+          const ng = ctx.createGain();
+          nf.type = 'highpass';
+          nf.frequency.value = 5500;
+          noise.buffer = buf;
+          noise.connect(nf).connect(ng).connect(dest);
+          ng.gain.setValueAtTime(0.08, tHit);
+          ng.gain.exponentialRampToValueAtTime(0.001, tHit + 0.08);
+          noise.start(tHit);
+        }
       });
     };
 
