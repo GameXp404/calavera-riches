@@ -97,6 +97,63 @@ const Game = {
     try { localStorage.setItem(`calavera_${this._getUser()}_auto`, JSON.stringify(this.state.autoConfig)); } catch (_) {}
   },
 
+  // Lobby JWT token (set by lobby on login, shared via same-origin localStorage).
+  _lobbyToken() { return localStorage.getItem('calavera_lobby_token'); },
+
+  // Fetch authoritative balance + stats from server (only when lobby token exists).
+  // Falls back to localStorage if API fails.
+  async _loadFromServer() {
+    const token = this._lobbyToken();
+    if (!token) return false;
+    try {
+      const res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const u = data.user || {};
+      this.state.balance = Number(u.balance) || 0;
+      this.state.stats.spins      = Number(u.spins) || 0;
+      this.state.stats.totalBet   = Number(u.total_bet) || 0;
+      this.state.stats.totalWin   = Number(u.total_win) || 0;
+      this.state.stats.biggestWin = Number(u.biggest_win) || 0;
+      if (typeof u.bet_idx === 'number') {
+        this.state.betIdx = u.bet_idx;
+        this.state.bet = GAME_CONFIG.BET_LEVELS[u.bet_idx] || GAME_CONFIG.DEFAULT_BET;
+      }
+      if (typeof u.turbo === 'number') this.state.turbo = u.turbo;
+      if (typeof u.ante_bet === 'boolean') this.state.anteBet = u.ante_bet;
+      return true;
+    } catch (e) {
+      console.warn('[server load failed]', e);
+      return false;
+    }
+  },
+
+  // Push spin result to server. Server validates + returns new authoritative state.
+  async _syncSpinToServer(bet, win, tier, scatterCount, isFreeSpinSpin) {
+    const token = this._lobbyToken();
+    if (!token) return; // no lobby session → skip
+    try {
+      const res = await fetch('/api/player/spin-record', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bet, win, tier, scatterCount, isFreeSpinSpin }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      // Server returns authoritative balance + stats — override local
+      if (typeof data.balance === 'number') this.state.balance = data.balance;
+      if (data.stats) {
+        this.state.stats.spins      = data.stats.spins;
+        this.state.stats.totalBet   = data.stats.total_bet;
+        this.state.stats.totalWin   = data.stats.total_win;
+        this.state.stats.biggestWin = data.stats.biggest_win;
+      }
+      this.updateHUD();
+    } catch (e) {
+      console.warn('[spin sync failed]', e);
+    }
+  },
+
   // Persist turbo level + bet level + balance so player preferences + saldo survive refresh.
   // Per-user keyed — different usernames keep separate balances.
   loadPlayerPrefs() {
@@ -119,6 +176,13 @@ const Game = {
         this.state.stats.biggestWin = Number(p.stats.biggestWin) || 0;
       }
     } catch (_) {}
+
+    // If lobby token exists, fire async server fetch to override with authoritative values
+    if (this._lobbyToken()) {
+      this._loadFromServer().then((ok) => {
+        if (ok) this.updateHUD();
+      });
+    }
   },
   savePlayerPrefs() {
     try {
@@ -564,8 +628,11 @@ const Game = {
     if (Reels.spinning) return;
 
     const inBonus = FreeSpin.active;
+    // Track spin summary for end-of-spin server sync (Phase 1C — lobby integration)
+    let _spinBet = 0, _spinTier = 'NORMAL';
     if (!inBonus) {
       const eBet = this.effectiveBet();
+      _spinBet = eBet;
       if (this.state.balance < eBet) {
         // Proper insufficient-balance dialog instead of silent refund.
         // Offers: lower bet (auto pick lowest level player can afford) or top-up via admin.
@@ -735,6 +802,10 @@ const Game = {
     //   FS stays sticky (never reset between FS spins).
 
     const finishSpin = async () => {
+      // PHASE 1C: sync spin result to server (overrides local balance + stats with authoritative values)
+      // No-op if user not logged in via lobby (no token in localStorage)
+      this._syncSpinToServer(_spinBet, multipliedWin || 0, _spinTier, scatterCount || 0, inBonus);
+
       this.updateMultiplierBadges();
       if (FreeSpin.active) {
         const summary = FreeSpin.consume();
@@ -800,6 +871,7 @@ const Game = {
 
     if (multipliedWin > 0) {
       const tier = WinCelebration.determineTier(multipliedWin, this.state.bet);
+      _spinTier = tier;
       // For NORMAL tier wins (no celebration popup), roll the HUD counter ourselves.
       // For BIG/MEGA/EPIC/LEGENDARY, the celebration popup drives winEl text
       // via onUpdate — no need to roll twice (avoids flicker conflict).
