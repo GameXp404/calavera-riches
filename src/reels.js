@@ -462,8 +462,9 @@ export const Reels = {
   },
 
   // ANTICIPATION GLOW — visual effect on a reel during anticipation spin.
-  // Creates a pulsing purple/gold border with starburst rays that auto-cleans
-  // up after the given duration.
+  // Reads PG Wild Bandito's signature: thick gold border with multi-layer glow,
+  // bright yellow inner film, rotating starburst behind. Pulses for the full
+  // duration so player can clearly see WHICH reels still need scatter.
   showAnticipationGlow(reelIdx, durationMs) {
     const reel = this.reels[reelIdx];
     if (!reel) return;
@@ -471,37 +472,71 @@ export const Reels = {
     const reelW = size;
     const reelH = size * GAME_CONFIG.ROWS;
     const overlay = new PIXI.Container();
-    // Glow border (multi-stack for shine)
-    const border = new PIXI.Graphics();
-    border.lineStyle(8, 0xe94560, 0.85); // crimson outer
-    border.drawRoundedRect(-4, -4, reelW + 8, reelH + 8, 10);
-    border.lineStyle(4, 0xffd86b, 1);    // gold inner
-    border.drawRoundedRect(-2, -2, reelW + 4, reelH + 4, 8);
-    overlay.addChild(border);
-    // Flash overlay (transparent purple film)
+
+    // Layer 1: rotating starburst rays BEHIND film (large, soft)
+    const rays = new PIXI.Graphics();
+    const rayCount = 24;
+    const rayLength = Math.max(reelW, reelH);
+    rays.beginFill(0xfbbf24, 0.18);
+    for (let i = 0; i < rayCount; i++) {
+      const a1 = (i / rayCount) * Math.PI * 2;
+      const a2 = a1 + (Math.PI * 2 / rayCount) * 0.5;
+      rays.moveTo(0, 0);
+      rays.lineTo(Math.cos(a1) * rayLength, Math.sin(a1) * rayLength);
+      rays.lineTo(Math.cos(a2) * rayLength, Math.sin(a2) * rayLength);
+      rays.lineTo(0, 0);
+    }
+    rays.endFill();
+    rays.x = reelW / 2; rays.y = reelH / 2;
+    rays.alpha = 0;
+    overlay.addChild(rays);
+
+    // Layer 2: bright gold film (whole reel area, warm yellow tint)
     const film = new PIXI.Graphics();
-    film.beginFill(0xc94070, 0.25);
+    film.beginFill(0xf59e0b, 0.35);
     film.drawRect(0, 0, reelW, reelH);
     film.endFill();
     overlay.addChild(film);
+
+    // Layer 3: chunky multi-stack gold border for the WB-thick glow look
+    const border = new PIXI.Graphics();
+    border.lineStyle(12, 0xb91c1c, 0.65);  // outer crimson halo
+    border.drawRoundedRect(-6, -6, reelW + 12, reelH + 12, 14);
+    border.lineStyle(7, 0xfbbf24, 1);       // bright gold middle
+    border.drawRoundedRect(-3, -3, reelW + 6, reelH + 6, 10);
+    border.lineStyle(2.5, 0xffffff, 0.9);   // white inner highlight
+    border.drawRoundedRect(0, 0, reelW, reelH, 8);
+    overlay.addChild(border);
+
     overlay.alpha = 0;
     reel.container.addChild(overlay);
+
     // Shared cleanup guard so timeline.onComplete and safety setTimeout don't
     // both try to destroy the overlay (would throw on second destroy).
     let cleaned = false;
+    let raySpinTween = null;
     const safeCleanup = () => {
       if (cleaned) return;
       cleaned = true;
+      if (raySpinTween) raySpinTween.kill();
       if (overlay.parent) overlay.parent.removeChild(overlay);
       if (!overlay.destroyed) overlay.destroy({ children: true });
     };
-    // Pulse animation: fade in fast, then strobe alpha
+
+    // Rays spin continuously while the overlay is up.
+    raySpinTween = gsap.to(rays, { rotation: Math.PI * 2, duration: 3, repeat: -1, ease: 'none' });
+
+    // Pulse the WHOLE overlay alpha while pulse strobe runs.
+    // Duration adapts to the actual spin time so glow stays until reel stops.
+    const pulseCount = Math.max(4, Math.round(durationMs / 280));
     const tl = gsap.timeline({ onComplete: safeCleanup });
-    tl.to(overlay, { alpha: 1, duration: 0.2, ease: 'power2.out' })
-      .to(overlay, { alpha: 0.4, duration: 0.18, ease: 'sine.inOut', repeat: 6, yoyo: true })
-      .to(overlay, { alpha: 0, duration: 0.25, ease: 'power2.in' }, '+=0.1');
+    tl.to(overlay, { alpha: 1, duration: 0.18, ease: 'power2.out' })
+      .to(rays,    { alpha: 0.9, duration: 0.18, ease: 'power2.out' }, '<')
+      .to(overlay, { alpha: 0.55, duration: 0.16, ease: 'sine.inOut', repeat: pulseCount, yoyo: true })
+      .to(overlay, { alpha: 0, duration: 0.25, ease: 'power2.in' }, '+=0.05');
+
     // Auto-cleanup safety
-    setTimeout(safeCleanup, durationMs + 1000);
+    setTimeout(safeCleanup, durationMs + 1200);
   },
 
   clearAllGoldFrames() {
@@ -802,13 +837,15 @@ export const Reels = {
           .slice(0, r)
           .reduce((sum, strip) => sum + strip.filter(s => s === SCATTER_ID).length, 0);
         const isAnticipation = !turbo && scattersBeforeThisReel >= 2;
-        // Escalating extra duration: 0.7s, 1.1s, 1.5s for 1st/2nd/3rd anticipating reel
-        const extraDur = isAnticipation ? 0.7 + antiReelsSoFar * 0.4 : 0;
+        // Escalating extra duration so anticipation feels like WB's reel hold —
+        // each subsequent reel that still might land scatter spins noticeably
+        // longer: +1.6s, +2.3s, +3.0s for reels 1/2/3 of the anticipation chain.
+        const extraDur = isAnticipation ? 1.6 + antiReelsSoFar * 0.7 : 0;
         const dur = baseDur + r * reelDelay + extraDur;
         if (isAnticipation) {
           antiReelsSoFar++;
           Audio.anticipation();
-          this.showAnticipationGlow(r, (dur + 0.2) * 1000);
+          this.showAnticipationGlow(r, (dur + 0.3) * 1000);
         }
         await new Promise(rr => setTimeout(rr, r === 0 ? 0 : reelDelay * 1000));
         promises.push(this.spinReel(r, dur, allSymbols[r], goldMask[r]));
