@@ -186,14 +186,29 @@
   <!-- Splash / loading screen — bridges menu → game with spinning mariachi + progress -->
   <div id="splash-screen" class="hidden">
     <div class="splash-bg-overlay"></div>
+    <div class="splash-papel-picado">
+      <span class="papel" style="left:6%; animation-delay:0s;   background:#ef4444"></span>
+      <span class="papel" style="left:18%; animation-delay:0.8s; background:#f97316"></span>
+      <span class="papel" style="left:30%; animation-delay:1.6s; background:#22c55e"></span>
+      <span class="papel" style="left:42%; animation-delay:2.4s; background:#06b6d4"></span>
+      <span class="papel" style="left:55%; animation-delay:0.4s; background:#a855f7"></span>
+      <span class="papel" style="left:68%; animation-delay:1.2s; background:#ec4899"></span>
+      <span class="papel" style="left:80%; animation-delay:2.0s; background:#fbbf24"></span>
+      <span class="papel" style="left:92%; animation-delay:0.6s; background:#84cc16"></span>
+    </div>
     <div class="splash-content">
-      <img class="splash-skull" src="/assets/img/mariachi.png" alt="Loading">
+      <div class="splash-skull-wrap">
+        <div class="splash-halo"></div>
+        <img class="splash-skull" src="/assets/img/mariachi.png" alt="Loading">
+      </div>
       <h2 class="splash-title">CALAVERA RICHES</h2>
+      <p class="splash-tagline">BANDIT DARI ALAM BAKA · 1024 CARA MENANG</p>
       <p class="splash-text">Mempersiapkan permainan<span class="splash-dots"></span></p>
       <div class="splash-progress">
         <div class="splash-progress-bar" id="splash-progress-bar"></div>
       </div>
       <p class="splash-progress-label" id="splash-progress-label">0%</p>
+      <p class="splash-tip" id="splash-tip">💡 Simbol berbingkai emas akan berubah jadi WILD setelah menang!</p>
     </div>
   </div>
 

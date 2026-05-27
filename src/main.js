@@ -1699,9 +1699,42 @@ async function startGame() {
   } catch (e) {
     console.error('[startGame] init error', e);
   }
-  // Ensure splash is visible at least 1.2s for smooth UX (avoid instant flash)
-  await new Promise(r => setTimeout(r, 1200));
+  // Ensure splash is visible at least 2.2s for smooth UX (so player has time to
+  // read tagline + tip + see branding animation, instead of an instant flash).
+  await new Promise(r => setTimeout(r, 2200));
   hideSplash();
+}
+
+// Rotating tips shown at the bottom of the splash screen — each ~3.5s, lifecycle
+// stops when splash gets hidden.
+const SPLASH_TIPS = [
+  '💡 Simbol berbingkai emas akan berubah jadi WILD setelah menang!',
+  '🎯 Tekan TURBO 5× untuk spin paling cepat.',
+  '⭐ 3 simbol Peti Mati = 12 putaran gratis dengan multiplier tumbuh.',
+  '🎰 Ante Bet ON → 2× peluang scatter, +25% taruhan.',
+  '💎 Multiplier reset ke ×1 di awal setiap spin (base game).',
+  '🔥 Mode MEGA BELI langsung kasih 5 scatter equivalent!',
+  '🎺 Setiap cascade beruntun naikkan multiplier — semakin panjang, semakin BESAR!',
+  '🌟 Maks 1024 cara menang setiap spin dari kiri ke kanan.',
+];
+let _splashTipTimer = null;
+function startSplashTipRotation() {
+  const el = document.getElementById('splash-tip');
+  if (!el) return;
+  let i = Math.floor(Math.random() * SPLASH_TIPS.length);
+  el.textContent = SPLASH_TIPS[i];
+  if (_splashTipTimer) clearInterval(_splashTipTimer);
+  _splashTipTimer = setInterval(() => {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      i = (i + 1) % SPLASH_TIPS.length;
+      el.textContent = SPLASH_TIPS[i];
+      el.style.opacity = '1';
+    }, 350);
+  }, 3500);
+}
+function stopSplashTipRotation() {
+  if (_splashTipTimer) { clearInterval(_splashTipTimer); _splashTipTimer = null; }
 }
 
 function showSplash() {
@@ -1709,12 +1742,14 @@ function showSplash() {
   if (!s) return;
   s.classList.remove('hidden', 'fade-out');
   setSplashProgress(0);
+  startSplashTipRotation();
 }
 function hideSplash() {
   const s = document.getElementById('splash-screen');
   if (!s) return;
   setSplashProgress(100);
   s.classList.add('fade-out');
+  stopSplashTipRotation();
   setTimeout(() => { s.classList.add('hidden'); s.classList.remove('fade-out'); }, 650);
 }
 function setSplashProgress(pct) {
