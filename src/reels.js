@@ -465,6 +465,14 @@ export const Reels = {
   // Reads PG Wild Bandito's signature: thick gold border with multi-layer glow,
   // bright yellow inner film, rotating starburst behind. Pulses for the full
   // duration so player can clearly see WHICH reels still need scatter.
+  //
+  // IMPORTANT: this.reelContainer is masked to gridW × gridH so symbols don't
+  // spill outside the reel area during the spin scroll. If we appended the glow
+  // to reel.container (a child of the masked reelContainer), the chunky outer
+  // border (which extends -6..reelW+12 beyond the symbol area) would get
+  // CLIPPED — only the inner film stays visible, which looks like nothing.
+  // Fix: append the overlay to reelContainer.parent at the world position of
+  // the target reel, so the glow renders OUTSIDE the mask.
   showAnticipationGlow(reelIdx, durationMs) {
     const reel = this.reels[reelIdx];
     if (!reel) return;
@@ -472,6 +480,9 @@ export const Reels = {
     const reelW = size;
     const reelH = size * GAME_CONFIG.ROWS;
     const overlay = new PIXI.Container();
+    // Position overlay in PARENT (unmasked) coord space.
+    overlay.x = this.reelContainer.x + reelIdx * size;
+    overlay.y = this.reelContainer.y;
 
     // Layer 1: rotating starburst rays BEHIND film (large, soft)
     const rays = new PIXI.Graphics();
@@ -509,7 +520,10 @@ export const Reels = {
     overlay.addChild(border);
 
     overlay.alpha = 0;
-    reel.container.addChild(overlay);
+    // Attach to reelContainer.parent (unmasked) so the chunky outer border
+    // doesn't get clipped. Falls back to reel.container if no parent (shouldn't happen).
+    const host = this.reelContainer.parent || reel.container;
+    host.addChild(overlay);
 
     // Shared cleanup guard so timeline.onComplete and safety setTimeout don't
     // both try to destroy the overlay (would throw on second destroy).
@@ -523,20 +537,32 @@ export const Reels = {
       if (!overlay.destroyed) overlay.destroy({ children: true });
     };
 
-    // Rays spin continuously while the overlay is up.
+    // Simpler animation: snap to full alpha, run infinite pulse, kill on duration.
+    overlay.alpha = 1;
+    rays.alpha = 0.9;
     raySpinTween = gsap.to(rays, { rotation: Math.PI * 2, duration: 3, repeat: -1, ease: 'none' });
+    // Continuous pulse (yoyo, infinite) — looks like WB's slow strobe.
+    const pulseTween = gsap.to(overlay, {
+      alpha: 0.55,
+      duration: 0.4,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+    });
 
-    // Pulse the WHOLE overlay alpha while pulse strobe runs.
-    // Duration adapts to the actual spin time so glow stays until reel stops.
-    const pulseCount = Math.max(4, Math.round(durationMs / 280));
-    const tl = gsap.timeline({ onComplete: safeCleanup });
-    tl.to(overlay, { alpha: 1, duration: 0.18, ease: 'power2.out' })
-      .to(rays,    { alpha: 0.9, duration: 0.18, ease: 'power2.out' }, '<')
-      .to(overlay, { alpha: 0.55, duration: 0.16, ease: 'sine.inOut', repeat: pulseCount, yoyo: true })
-      .to(overlay, { alpha: 0, duration: 0.25, ease: 'power2.in' }, '+=0.05');
+    // Kill animations + cleanup exactly when the reel stops, after a short fade.
+    setTimeout(() => {
+      pulseTween.kill();
+      gsap.to(overlay, {
+        alpha: 0,
+        duration: 0.25,
+        ease: 'power2.in',
+        onComplete: safeCleanup,
+      });
+    }, Math.max(300, durationMs - 250));
 
-    // Auto-cleanup safety
-    setTimeout(safeCleanup, durationMs + 1200);
+    // Hard safety net in case the fade-out tween never completes.
+    setTimeout(safeCleanup, durationMs + 1500);
   },
 
   clearAllGoldFrames() {
