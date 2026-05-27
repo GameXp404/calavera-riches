@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "gsap": "^3.12.5",
-    "pixi.js": "^7.4.2",
     "@pixi/filter-glow": "^5.2.1",
     "@pixi/filter-godray": "^5.1.1",
-    "@pixi/particle-emitter": "^5.0.10"
+    "@pixi/particle-emitter": "^5.0.10",
+    "@supabase/supabase-js": "^2.106.2",
+    "gsap": "^3.12.5",
+    "jsonwebtoken": "^9.0.3",
+    "pixi.js": "^7.4.2"
   },
   "devDependencies": {
     "vite": "^5.4.0"

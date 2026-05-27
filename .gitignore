@@ -8,3 +8,4 @@ dist/
 preview-*.png
 *.zip
 
+.supabase-credentials.txt

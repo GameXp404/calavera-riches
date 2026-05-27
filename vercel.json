@@ -9,7 +9,8 @@
     { "source": "/sw.js", "destination": "/sw.js" },
     { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
     { "source": "/assets/:path*", "destination": "/assets/:path*" },
-    { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/((?!api|.*\\.).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
