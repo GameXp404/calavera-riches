@@ -6,6 +6,8 @@
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/admin.html", "destination": "/admin.html" },
+    { "source": "/lobby.html", "destination": "/lobby.html" },
+    { "source": "/lobby", "destination": "/lobby.html" },
     { "source": "/sw.js", "destination": "/sw.js" },
     { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
     { "source": "/assets/:path*", "destination": "/assets/:path*" },
