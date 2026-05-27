@@ -158,6 +158,34 @@
       <tbody id="user-rows"></tbody>
     </table>
 
+    <h2 class="section-title">🎰 Progressive Jackpot</h2>
+    <div class="setting-card" style="margin-bottom: 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+        <div>
+          <strong style="color:var(--accent);">Status:</strong>
+          <button id="jp-enabled-toggle" class="toggle-btn off" style="margin-left:8px;">OFF</button>
+          <span class="hint" style="margin-left:12px;">Saat ON, tiap spin akan kontribusi ke pool sesuai % di bawah.</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="jp-save-btn" class="small-btn" style="background:var(--success);color:white;border:none;">💾 Simpan Config</button>
+          <button id="jp-reset-btn" class="small-btn" style="background:var(--danger);color:white;border:none;">🔄 Reset Pool ke Seed</button>
+        </div>
+      </div>
+      <table style="margin-top:8px;">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th class="num">Seed Amount</th>
+            <th class="num">Contribution %</th>
+            <th class="num">Current Pool</th>
+            <th>Manual Trigger</th>
+          </tr>
+        </thead>
+        <tbody id="jp-tier-rows"></tbody>
+      </table>
+      <p class="hint">Per spin: <em>(effective bet × contribution%)</em> ditambahkan ke pool tiap tier. Trigger manual: admin pilih user → user dapat saldo + popup celebration + pool reset ke seed. Random auto-trigger BELUM aktif (admin-only untuk kontrol).</p>
+    </div>
+
     <h2 class="section-title">🌐 Global Controls</h2>
     <div class="settings-grid">
       <div class="setting-card">
@@ -268,11 +296,13 @@
     renderDiff();
     renderMaintenance();
     renderBroadcast();
+    renderJP();
     if (!showDashboard._bound) {
       bindDiff();
       bindReset();
       bindMaintenance();
       bindBroadcast();
+      bindJP();
       showDashboard._bound = true;
     }
   }
@@ -621,6 +651,161 @@
     toast(`${users.length} user dihapus`, 'success');
     refresh();
   });
+
+  // ============================================================
+  // PROGRESSIVE JACKPOT
+  // ============================================================
+  const JP_KEY = 'calavera_jackpot';
+  const JP_DEFAULT = {
+    enabled: false,
+    mini:  { seed: 500_000,    contribPct: 0.5,  pool: 500_000 },
+    minor: { seed: 2_500_000,  contribPct: 1.0,  pool: 2_500_000 },
+    major: { seed: 10_000_000, contribPct: 1.5,  pool: 10_000_000 },
+    grand: { seed: 50_000_000, contribPct: 2.0,  pool: 50_000_000 },
+    lastTriggered: null,
+  };
+  const JP_TIERS = [
+    { key: 'mini',  label: 'MINI',  color: '#4d9d6b', emoji: '🟢' },
+    { key: 'minor', label: 'MINOR', color: '#3b8ec4', emoji: '🔵' },
+    { key: 'major', label: 'MAJOR', color: '#c44d3b', emoji: '🔴' },
+    { key: 'grand', label: 'GRAND', color: '#ffb84d', emoji: '🟡' },
+  ];
+  function loadJP() {
+    try {
+      const s = JSON.parse(localStorage.getItem(JP_KEY) || 'null');
+      if (!s) return JP_DEFAULT;
+      // merge with defaults for safety
+      return {
+        enabled: !!s.enabled,
+        mini:  { ...JP_DEFAULT.mini,  ...(s.mini  || {}) },
+        minor: { ...JP_DEFAULT.minor, ...(s.minor || {}) },
+        major: { ...JP_DEFAULT.major, ...(s.major || {}) },
+        grand: { ...JP_DEFAULT.grand, ...(s.grand || {}) },
+        lastTriggered: s.lastTriggered || null,
+      };
+    } catch (_) { return JP_DEFAULT; }
+  }
+  function saveJP(state) {
+    localStorage.setItem(JP_KEY, JSON.stringify(state));
+  }
+  function renderJP() {
+    const s = loadJP();
+    const t = $('jp-enabled-toggle');
+    t.textContent = s.enabled ? 'ON' : 'OFF';
+    t.className = 'toggle-btn ' + (s.enabled ? 'on' : 'off');
+    const tbody = $('jp-tier-rows');
+    tbody.innerHTML = '';
+    JP_TIERS.forEach((tier) => {
+      const data = s[tier.key];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span style="color:${tier.color};font-weight:700;letter-spacing:1px;">${tier.emoji} ${tier.label}</span></td>
+        <td class="num"><input type="number" class="jp-seed-input" data-tier="${tier.key}" value="${data.seed}" min="0" step="100000" style="width:130px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;"></td>
+        <td class="num"><input type="number" class="jp-pct-input" data-tier="${tier.key}" value="${data.contribPct}" min="0" max="100" step="0.1" style="width:70px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;">%</td>
+        <td class="num" style="color:${tier.color};font-weight:700;font-size:15px;">${fmtMoney(data.pool)}</td>
+        <td><button class="small-btn jp-trigger-btn" data-tier="${tier.key}" style="background:${tier.color};color:#1a0a1f;border:none;font-weight:700;">🎰 Trigger</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    // Last triggered info
+    if (s.lastTriggered) {
+      const lt = s.lastTriggered;
+      const hint = `Trigger terakhir: <strong>${lt.tier.toUpperCase()}</strong> → <strong>${lt.user}</strong> (Rp ${fmtMoney(lt.amount)}) — ${fmtRelTime(lt.at)}`;
+      const existing = document.querySelector('#jp-last-trigger');
+      if (existing) existing.innerHTML = hint;
+    }
+  }
+  function bindJP() {
+    $('jp-enabled-toggle').addEventListener('click', () => {
+      const s = loadJP();
+      s.enabled = !s.enabled;
+      saveJP(s);
+      renderJP();
+      toast('Jackpot ' + (s.enabled ? 'AKTIF' : 'OFF'), 'success');
+    });
+    $('jp-save-btn').addEventListener('click', () => {
+      const s = loadJP();
+      document.querySelectorAll('.jp-seed-input').forEach((inp) => {
+        s[inp.dataset.tier].seed = Math.max(0, parseInt(inp.value, 10) || 0);
+      });
+      document.querySelectorAll('.jp-pct-input').forEach((inp) => {
+        s[inp.dataset.tier].contribPct = Math.max(0, Math.min(100, parseFloat(inp.value) || 0));
+      });
+      saveJP(s);
+      toast('Config jackpot disimpan', 'success');
+    });
+    $('jp-reset-btn').addEventListener('click', () => {
+      if (!confirm('Reset SEMUA pool ke seed amount?\n\nKontribusi yang sudah masuk akan HANGUS.')) return;
+      const s = loadJP();
+      JP_TIERS.forEach((tier) => { s[tier.key].pool = s[tier.key].seed; });
+      saveJP(s);
+      renderJP();
+      toast('Pool di-reset ke seed', 'success');
+    });
+    // Event delegation — buttons get rebuilt on each renderJP call, so attach to parent tbody
+    const tbody = $('jp-tier-rows');
+    if (tbody && !tbody._delegated) {
+      tbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.jp-trigger-btn');
+        if (btn) triggerJackpot(btn.dataset.tier);
+      });
+      tbody._delegated = true;
+    }
+  }
+  function triggerJackpot(tierKey) {
+    const users = getAllUsers();
+    if (users.length === 0) { toast('Tidak ada user terdaftar', 'error'); return; }
+    const userList = users.map((u, i) => `${i + 1}. ${u.username}`).join('\n');
+    const choice = prompt(`🎰 Trigger Jackpot ${tierKey.toUpperCase()} ke user mana?\n\n${userList}\n\nKetik nomor atau username:`);
+    if (!choice) return;
+    let target = null;
+    const num = parseInt(choice, 10);
+    if (Number.isFinite(num) && num >= 1 && num <= users.length) {
+      target = users[num - 1].username;
+    } else {
+      const found = users.find((u) => u.username.toLowerCase() === choice.toLowerCase().trim());
+      if (found) target = found.username;
+    }
+    if (!target) { toast('User tidak ditemukan', 'error'); return; }
+
+    const s = loadJP();
+    const pool = s[tierKey].pool;
+    if (pool <= 0) { toast('Pool kosong', 'error'); return; }
+    if (!confirm(`Konfirmasi: berikan jackpot ${tierKey.toUpperCase()} sebesar Rp ${fmtMoney(pool)} kepada "${target}"?\n\nPool akan reset ke seed (Rp ${fmtMoney(s[tierKey].seed)}).`)) return;
+
+    // Queue as pendingBonus on target user with tier marker
+    const key = `calavera_${target}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    const prevAmt = data.pendingBonus?.amount || 0;
+    data.pendingBonus = {
+      amount: prevAmt + pool,
+      jackpotTier: tierKey,
+      queuedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+
+    // Reset pool to seed + record trigger
+    s[tierKey].pool = s[tierKey].seed;
+    s.lastTriggered = { tier: tierKey, user: target, amount: pool, at: new Date().toISOString() };
+    saveJP(s);
+
+    // Big-win log entry
+    try {
+      const LOG_KEY = 'calavera_bigwin_log';
+      let log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      log.unshift({
+        user: target, tier: 'JACKPOT-' + tierKey.toUpperCase(),
+        amount: pool, bet: 0, mult: 0, at: new Date().toISOString(),
+      });
+      if (log.length > 50) log = log.slice(0, 50);
+      localStorage.setItem(LOG_KEY, JSON.stringify(log));
+    } catch (_) {}
+
+    toast(`Jackpot ${tierKey.toUpperCase()} (Rp ${fmtMoney(pool)}) → ${target}`, 'success');
+    renderJP();
+    refresh();
+  }
 
   // ============================================================
   // MAINTENANCE + BROADCAST (global controls)

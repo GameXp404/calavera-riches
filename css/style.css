@@ -3870,3 +3870,64 @@ body:has(#freespin-badge) #marquee-banner { display: none; }
 }
 
 .paytable-close:active { transform: scale(0.95); }
+
+/* ============================================================
+   PROGRESSIVE JACKPOT HUD — floating row between hud-top + marquee
+   ============================================================ */
+.jackpot-hud {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px 2px;
+  margin: 0 auto;
+  max-width: 720px;
+  cursor: pointer;
+  user-select: none;
+}
+.jackpot-hud.hidden { display: none; }
+.jp-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+  min-width: 0;
+  transition: transform .15s, box-shadow .15s;
+}
+.jp-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+.jp-pill .jp-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  font-size: 9px;
+  line-height: 1;
+  text-shadow: 0 0 4px currentColor;
+}
+.jp-pill .jp-amount {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #fff7e0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.jp-grand { background: linear-gradient(180deg, rgba(255,184,77,0.35) 0%, rgba(180,100,20,0.6) 100%); border-color: #ffb84d; }
+.jp-grand .jp-label { color: #ffb84d; }
+.jp-major { background: linear-gradient(180deg, rgba(196,77,59,0.35) 0%, rgba(140,40,30,0.6) 100%); border-color: #c44d3b; }
+.jp-major .jp-label { color: #ff6a55; }
+.jp-minor { background: linear-gradient(180deg, rgba(59,142,196,0.35) 0%, rgba(30,80,140,0.6) 100%); border-color: #3b8ec4; }
+.jp-minor .jp-label { color: #7ec8ff; }
+.jp-mini  { background: linear-gradient(180deg, rgba(77,157,107,0.35) 0%, rgba(30,90,60,0.6) 100%); border-color: #4d9d6b; }
+.jp-mini  .jp-label { color: #6fdc92; }
+
+@media (max-width: 480px) {
+  .jp-pill .jp-label  { font-size: 8px; letter-spacing: 1px; }
+  .jp-pill .jp-amount { font-size: 10px; }
+  .jackpot-hud { gap: 3px; padding: 4px 4px 1px; }
+}

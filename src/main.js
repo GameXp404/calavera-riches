@@ -582,6 +582,19 @@ const Game = {
         existing.lastSpin = new Date().toISOString();
         localStorage.setItem(key, JSON.stringify(existing));
       } catch (_) {}
+      // Progressive Jackpot: contribute % of bet to each enabled tier's pool.
+      try {
+        const jp = JSON.parse(localStorage.getItem('calavera_jackpot') || 'null');
+        if (jp && jp.enabled) {
+          ['mini', 'minor', 'major', 'grand'].forEach((tier) => {
+            const cfg = jp[tier];
+            if (cfg && typeof cfg.contribPct === 'number') {
+              jp[tier].pool = (cfg.pool || cfg.seed || 0) + Math.floor(eBet * cfg.contribPct / 100);
+            }
+          });
+          localStorage.setItem('calavera_jackpot', JSON.stringify(jp));
+        }
+      } catch (_) {}
       this.savePlayerPrefs(); // persist new balance (bet deducted)
     }
     // Cancel any in-flight win counter animation from the previous spin before
@@ -1905,6 +1918,34 @@ async function attemptLogin() {
 
   hideLoginAndStart();
 }
+// Progressive Jackpot HUD: polls localStorage every 1.5s, renders 4 pool pills.
+// Hidden when jackpot system is disabled by admin.
+function setupJackpotHUD() {
+  const hud = document.getElementById('jackpot-hud');
+  if (!hud) return;
+  const fmt = (n) => Math.floor(Number(n) || 0).toLocaleString('id-ID');
+  function tick() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem('calavera_jackpot') || 'null'); } catch (_) { s = null; }
+    if (!s || !s.enabled) {
+      hud.classList.add('hidden');
+      return;
+    }
+    hud.classList.remove('hidden');
+    ['mini', 'minor', 'major', 'grand'].forEach((tier) => {
+      const el = hud.querySelector(`.jp-amount[data-tier="${tier}"]`);
+      if (el) el.textContent = 'Rp ' + fmt(s[tier]?.pool || 0);
+    });
+  }
+  tick();
+  setInterval(tick, 1500);
+  // Click → show detail modal (reuse existing jackpot-modal for info, append pool snapshot)
+  hud.addEventListener('click', () => {
+    const modal = document.getElementById('jackpot-modal');
+    if (modal) modal.classList.remove('hidden');
+  });
+}
+
 function setupLoginUI() {
   document.getElementById('btn-login').addEventListener('click', attemptLogin);
   document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
@@ -2039,6 +2080,7 @@ window.addEventListener('load', () => {
   setupLoginUI();
   setupMainMenuUI();
   setupLoginAttract();
+  setupJackpotHUD();
   // OPEN LOGIN: any saved username = auto-resume to main menu
   const savedUser = localStorage.getItem(LOGIN_KEY);
   if (savedUser && savedUser.trim()) {
