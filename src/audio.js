@@ -708,7 +708,7 @@ export const Audio = {
     winHighlight:     { url: 'assets/audio/win_highlight.mp3',     vol: 0.7  },
     winSmall:         { url: 'assets/audio/win_small.wav',         vol: 0.85 },
     winBig:           { url: 'assets/audio/win_big.wav',           vol: 0.95 },
-    winEpic:          { url: 'assets/audio/win_epic.wav',          vol: 1.0  },
+    winEpic:          { url: 'assets/audio/win_epic.mp3',          vol: 1.0  },
     winLegendary:     { url: 'assets/audio/win_legendary.wav',     vol: 1.0  },
     freeSpinTrigger:  { url: 'assets/audio/free_spin_trigger.mp3', vol: 1.0  },
     cascadePop:       { url: 'assets/audio/cascade_pop.wav',       vol: 0.7  },
