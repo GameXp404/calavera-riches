@@ -63,6 +63,31 @@
   .toast.success { background: var(--success); }
   .toast.error { background: var(--danger); }
   .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .section-title { margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); color: var(--accent); font-size: 18px; letter-spacing: 1px; }
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .setting-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .setting-card h3 { margin: 0 0 12px; font-size: 14px; color: var(--accent); letter-spacing: 1px; }
+  .setting-card.danger-card { border-color: #6b2a2a; background: #2a0d0d; }
+  .setting-row { margin-bottom: 12px; }
+  .setting-row label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.5px; }
+  .setting-row label span { color: var(--fg); font-weight: 600; }
+  .setting-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .setting-row.toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+  .setting-row.toggle-row label { margin: 0; font-size: 13px; color: var(--fg); }
+  .toggle-btn { padding: 6px 18px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px; letter-spacing: 1px; }
+  .toggle-btn.on { background: var(--success); color: white; }
+  .toggle-btn.off { background: #555; color: #ccc; }
+  .difficulty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .diff-btn { padding: 12px 8px; background: var(--bg2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; transition: all .15s; }
+  .diff-btn:hover { border-color: var(--accent); }
+  .diff-btn.active { background: var(--accent); color: #1a0a1f; border-color: var(--accent); }
+  .full-btn { width: 100%; padding: 10px; background: var(--accent); color: #1a0a1f; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; margin-bottom: 6px; letter-spacing: 0.5px; }
+  .full-btn:hover { filter: brightness(1.1); }
+  .full-btn.danger { background: var(--danger); color: white; }
+  .hint { font-size: 11px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
+  .info-list { padding-left: 18px; margin: 8px 0 0; font-size: 12px; line-height: 1.7; color: var(--fg); }
+  .info-list li { margin-bottom: 4px; }
+  .info-list strong { color: var(--accent); }
   .footer-note { margin-top: 24px; padding: 12px; background: #0d050f; border-left: 3px solid var(--accent2); font-size: 12px; color: var(--muted); border-radius: 4px; }
   .footer-note strong { color: var(--accent); }
   .small-btn { padding: 4px 8px; font-size: 11px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
@@ -124,6 +149,56 @@
       <tbody id="user-rows"></tbody>
     </table>
     <div id="empty-state" class="empty" style="display:none;">Belum ada user. Login ke game dulu untuk membuat data.</div>
+    <h2 class="section-title">⚙️ Pengaturan Game</h2>
+
+    <div class="settings-grid">
+      <div class="setting-card">
+        <h3>🔊 Volume</h3>
+        <div class="setting-row">
+          <label>Master <span id="vol-master-val">100%</span></label>
+          <input type="range" id="vol-master" min="0" max="100" step="1" value="100">
+        </div>
+        <div class="setting-row">
+          <label>SFX <span id="vol-sfx-val">50%</span></label>
+          <input type="range" id="vol-sfx" min="0" max="100" step="1" value="50">
+        </div>
+        <div class="setting-row toggle-row">
+          <label>Sound</label>
+          <button id="vol-toggle" class="toggle-btn on">ON</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>🎯 Tingkat Kesulitan</h3>
+        <div class="difficulty-grid">
+          <button class="diff-btn" data-level="easy">🎃 EASY</button>
+          <button class="diff-btn" data-level="normal">⚖️ NORMAL</button>
+          <button class="diff-btn" data-level="hard">🔥 HARD</button>
+          <button class="diff-btn" data-level="very-hard">💀 VERY HARD</button>
+        </div>
+        <p class="hint">Saat ini: <strong id="diff-current">NORMAL</strong></p>
+      </div>
+
+      <div class="setting-card danger-card">
+        <h3>🚨 Reset</h3>
+        <button id="reset-settings-btn" class="full-btn">Reset Audio + Difficulty</button>
+        <button id="reset-everything-btn" class="full-btn danger">Reset SEMUA (user + settings)</button>
+        <p class="hint">Reset audio/difficulty: aman, hanya hapus konfigurasi. Reset semua: hapus juga balance dan stats semua user.</p>
+      </div>
+
+      <div class="setting-card">
+        <h3>ℹ️ Tentang Game</h3>
+        <p><strong style="color:var(--accent);font-size:14px;">CALAVERA RICHES</strong></p>
+        <p class="hint">Día de los Muertos — 1024 Ways Slot</p>
+        <ul class="info-list">
+          <li><strong>Mekanik:</strong> 1024 ways, RTP 96.5%, multiplier ladder 0.50</li>
+          <li><strong>Free Spin:</strong> 3/4/5 scatter → 8/15/30 spins</li>
+          <li><strong>Tech:</strong> Vite 5 · PIXI.js 7.4.2 · GSAP 3.12 · Web Audio</li>
+          <li><strong>Theme:</strong> Mexican Day of the Dead</li>
+        </ul>
+      </div>
+    </div>
+
     <div class="footer-note">
       <strong>Catatan:</strong> Data dibaca dari <em>localStorage browser ini saja</em>. Setiap device punya data terpisah (tidak ada server backend). Admin di HP-mu tidak melihat user di HP lain.
     </div>
@@ -158,6 +233,15 @@
     $('dashboard').style.display = 'block';
     refresh();
     $('hdr-now').textContent = new Date().toLocaleString('id-ID');
+    // Init settings UI (audio, difficulty, reset)
+    renderAudio();
+    renderDiff();
+    if (!showDashboard._bound) {
+      bindAudio();
+      bindDiff();
+      bindReset();
+      showDashboard._bound = true;
+    }
   }
 
   function tryLogin() {
@@ -322,6 +406,99 @@
     toast(`${users.length} user dihapus`, 'success');
     refresh();
   });
+
+  // ============================================================
+  // AUDIO SETTINGS
+  // ============================================================
+  const AUDIO_KEY = 'calavera_audio';
+  function loadAudio() {
+    try { return JSON.parse(localStorage.getItem(AUDIO_KEY) || '{}'); } catch (_) { return {}; }
+  }
+  function saveAudio(patch) {
+    const cur = loadAudio();
+    const next = { master: 1.0, sfx: 0.5, enabled: true, ...cur, ...patch };
+    localStorage.setItem(AUDIO_KEY, JSON.stringify(next));
+    return next;
+  }
+  function renderAudio() {
+    const a = loadAudio();
+    const master = typeof a.master === 'number' ? a.master : 1.0;
+    const sfx = typeof a.sfx === 'number' ? a.sfx : 0.5;
+    const enabled = a.enabled !== false;
+    $('vol-master').value = Math.round(master * 100);
+    $('vol-master-val').textContent = Math.round(master * 100) + '%';
+    $('vol-sfx').value = Math.round(sfx * 100);
+    $('vol-sfx-val').textContent = Math.round(sfx * 100) + '%';
+    const t = $('vol-toggle');
+    t.textContent = enabled ? 'ON' : 'OFF';
+    t.className = 'toggle-btn ' + (enabled ? 'on' : 'off');
+  }
+  function bindAudio() {
+    $('vol-master').addEventListener('input', (e) => {
+      const v = parseInt(e.target.value, 10) / 100;
+      saveAudio({ master: v });
+      $('vol-master-val').textContent = e.target.value + '%';
+    });
+    $('vol-sfx').addEventListener('input', (e) => {
+      const v = parseInt(e.target.value, 10) / 100;
+      saveAudio({ sfx: v });
+      $('vol-sfx-val').textContent = e.target.value + '%';
+    });
+    $('vol-toggle').addEventListener('click', () => {
+      const cur = loadAudio();
+      const newEnabled = !(cur.enabled !== false);
+      saveAudio({ enabled: newEnabled });
+      renderAudio();
+      toast('Sound ' + (newEnabled ? 'ON' : 'OFF'), 'success');
+    });
+  }
+
+  // ============================================================
+  // DIFFICULTY SETTINGS
+  // ============================================================
+  const DIFF_KEY = 'calavera_difficulty';
+  const DIFF_LEVELS = ['easy', 'normal', 'hard', 'very-hard'];
+  function renderDiff() {
+    const cur = localStorage.getItem(DIFF_KEY) || 'normal';
+    document.querySelectorAll('.diff-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.level === cur);
+    });
+    $('diff-current').textContent = cur.toUpperCase().replace('-', ' ');
+  }
+  function bindDiff() {
+    document.querySelectorAll('.diff-btn').forEach((b) => {
+      b.addEventListener('click', () => {
+        const lvl = b.dataset.level;
+        if (!DIFF_LEVELS.includes(lvl)) return;
+        localStorage.setItem(DIFF_KEY, lvl);
+        renderDiff();
+        toast('Difficulty: ' + lvl.toUpperCase(), 'success');
+      });
+    });
+  }
+
+  // ============================================================
+  // RESET
+  // ============================================================
+  function bindReset() {
+    $('reset-settings-btn').addEventListener('click', () => {
+      if (!confirm('Reset audio + difficulty ke default?\n\nUser data dan balance TIDAK diubah.')) return;
+      localStorage.removeItem(AUDIO_KEY);
+      localStorage.removeItem(DIFF_KEY);
+      renderAudio();
+      renderDiff();
+      toast('Audio + difficulty di-reset', 'success');
+    });
+    $('reset-everything-btn').addEventListener('click', () => {
+      if (!confirm('Reset SEMUA data (user, balance, stats, audio, difficulty, auto-spin)?\n\nTidak bisa di-undo!')) return;
+      if (!confirm('Konfirmasi sekali lagi — yakin hapus SEMUA?')) return;
+      Object.keys(localStorage).filter(k => k.startsWith('calavera_')).forEach((k) => localStorage.removeItem(k));
+      renderAudio();
+      renderDiff();
+      refresh();
+      toast('Semua data di-reset', 'success');
+    });
+  }
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();
