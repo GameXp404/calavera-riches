@@ -633,11 +633,8 @@ const Game = {
     if (Reels.spinning) return;
 
     const inBonus = FreeSpin.active;
-    // Track spin summary for end-of-spin server sync (Phase 1C — lobby integration)
-    let _spinBet = 0, _spinTier = 'NORMAL';
     if (!inBonus) {
       const eBet = this.effectiveBet();
-      _spinBet = eBet;
       if (this.state.balance < eBet) {
         // Proper insufficient-balance dialog instead of silent refund.
         // Offers: lower bet (auto pick lowest level player can afford) or top-up via admin.
@@ -705,6 +702,11 @@ const Game = {
   },
 
   async _spinBody(spinBtn) {
+    // Track spin summary for end-of-spin server sync (Phase 1C — lobby integration)
+    const inBonus = FreeSpin.active;
+    let _spinBet = inBonus ? 0 : this.effectiveBet();
+    let _spinTier = 'NORMAL';
+
     // WB-style multiplier reset:
     //   Base game: reset to ×1 at the START of every spin (regardless of prior win)
     //   Free Spin: NEVER reset — multiplier is sticky across FS spins (WB convention)
