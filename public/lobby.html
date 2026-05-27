@@ -734,14 +734,14 @@
       <div class="tile-badge hot">🔥 HOT</div>
     </div>
 
-    <!-- ACTIVE: Knight Kingdom Slot (Unity WebGL build) -->
+    <!-- Knight Kingdom Slot — Unity WebGL build pending upload -->
     <div class="game-tile" id="game-knight">
       <div class="tile-img" style="background-image: url('/assets/img/KnightKingdom.png')"></div>
       <div class="tile-overlay">
         <div class="tile-name">KNIGHT KINGDOM</div>
         <div class="tile-meta">5×3 Slot · Free Spins · Jackpot</div>
       </div>
-      <div class="tile-badge new">⚔️ NEW</div>
+      <div class="tile-badge new">⚔️ SOON</div>
     </div>
 
     <!-- COMING SOON tiles (placeholder slots for future games) -->
@@ -1015,8 +1015,13 @@
   $('game-calavera').addEventListener('click', () => guardAuth(() => {
     window.location.href = '/?from=lobby';
   }));
-  $('game-knight')?.addEventListener('click', () => guardAuth(() => {
-    window.location.href = '/games/knight/';
+  $('game-knight')?.addEventListener('click', () => guardAuth(async () => {
+    // Probe build before navigating so we never strand the user on a 404 page.
+    try {
+      const r = await fetch('/games/knight/index.html', { method: 'HEAD' });
+      if (r.ok) { window.location.href = '/games/knight/'; return; }
+    } catch (_) {}
+    toast('⚔️ Knight Kingdom segera hadir — build WebGL sedang dipersiapkan!');
   }));
 
   document.querySelectorAll('.game-tile.coming-soon').forEach((el) => {
