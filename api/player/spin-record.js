@@ -18,7 +18,8 @@ export default async function handler(req, res) {
   const user = getUserFromReq(req);
   if (!user) return jsonError(res, 401, 'Not authenticated');
 
-  const { bet, win, tier, scatterCount, isFreeSpinSpin } = req.body || {};
+  const { bet, win, tier, scatterCount, isFreeSpinSpin, game } = req.body || {};
+  const gameId = typeof game === 'string' && game.length <= 32 ? game : 'calavera_riches';
   const betAmount = Math.max(0, Math.floor(Number(bet) || 0));
   const winAmount = Math.max(0, Math.floor(Number(win) || 0));
 
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
     type: 'spin',
     amount: winAmount - deductBet,
     balance_after: newBalance,
-    meta: { bet: deductBet, win: winAmount, tier: tier || null, scatters: scatterCount || 0 },
+    meta: { bet: deductBet, win: winAmount, tier: tier || null, scatters: scatterCount || 0, game: gameId },
   });
 
   // Big-win log (MEGA/EPIC/LEGENDARY)

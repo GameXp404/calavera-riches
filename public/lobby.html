@@ -734,8 +734,17 @@
       <div class="tile-badge hot">🔥 HOT</div>
     </div>
 
+    <!-- ACTIVE: Knight Kingdom Slot (Unity WebGL build) -->
+    <div class="game-tile" id="game-knight">
+      <div class="tile-img" style="background-image: url('/assets/img/KnightKingdom.png')"></div>
+      <div class="tile-overlay">
+        <div class="tile-name">KNIGHT KINGDOM</div>
+        <div class="tile-meta">5×3 Slot · Free Spins · Jackpot</div>
+      </div>
+      <div class="tile-badge new">⚔️ NEW</div>
+    </div>
+
     <!-- COMING SOON tiles (placeholder slots for future games) -->
-    <div class="game-tile coming-soon"><div class="lock">🔒</div><div class="label">COMING SOON</div></div>
     <div class="game-tile coming-soon"><div class="lock">🔒</div><div class="label">COMING SOON</div></div>
     <div class="game-tile coming-soon"><div class="lock">🔒</div><div class="label">COMING SOON</div></div>
     <div class="game-tile coming-soon"><div class="lock">🔒</div><div class="label">COMING SOON</div></div>
@@ -1005,6 +1014,9 @@
   // Game launcher — must be logged in to play
   $('game-calavera').addEventListener('click', () => guardAuth(() => {
     window.location.href = '/?from=lobby';
+  }));
+  $('game-knight')?.addEventListener('click', () => guardAuth(() => {
+    window.location.href = '/games/knight/';
   }));
 
   document.querySelectorAll('.game-tile.coming-soon').forEach((el) => {
