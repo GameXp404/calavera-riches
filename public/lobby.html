@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#1a0a1f">
-<title>GameCuan — Hub Game Indonesia</title>
+<title>GameGacor — Hub Game Indonesia</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   :root {
@@ -52,7 +52,22 @@
     align-items: center; justify-content: center;
     padding: 20px;
   }
-  #login-screen.hidden { display: none; }
+  #login-screen { display: none; }
+  #login-screen.show { display: flex; }
+  /* Modal-style close X for login overlay */
+  .login-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .login-close:hover { background: rgba(255, 255, 255, 0.15); }
 
   /* Floating marigold petals (festive ambient) */
   .login-petals { position: absolute; inset: 0; pointer-events: none; }
@@ -254,8 +269,7 @@
   /* ============================================================
      APP SHELL — KOKO303-STYLE AGGREGATOR LAYOUT
      ============================================================ */
-  #app { display: none; padding-bottom: 30px; background: #1a2438; min-height: 100vh; }
-  #app.show { display: block; }
+  #app { display: block; padding-bottom: 30px; background: #1a2438; min-height: 100vh; }
   body { background: #1a2438; }
   body::before { display: none; }
 
@@ -701,8 +715,9 @@
 </head>
 <body>
 
-<!-- LOGIN SCREEN — Vibrant welcoming hub -->
+<!-- LOGIN OVERLAY — Festive auth modal (shown when user clicks LOGIN/DAFTAR) -->
 <div id="login-screen">
+  <button class="login-close" id="btn-close-login" title="Tutup">×</button>
 
   <!-- Festive papel picado banners -->
   <div class="papel-banner">
@@ -726,7 +741,7 @@
   <!-- Hero: big logo + name + tagline -->
   <div class="login-hero">
     <div class="lobby-logo-big"></div>
-    <h1 class="lobby-name">GAMECUAN</h1>
+    <h1 class="lobby-name">GAMEGACOR</h1>
     <p class="lobby-tagline">🎰 Hub Game Hiburan Indonesia</p>
   </div>
 
@@ -771,20 +786,28 @@
   <header class="top-bar">
     <div class="brand">
       <div class="logo-dot"></div>
-      <span>GAMECUAN</span>
+      <span>GAMEGACOR</span>
     </div>
     <div class="top-info">
       <span id="top-time">—</span>
       <span class="lang-flag">INDONESIA · BHS INDONESIA</span>
     </div>
     <div class="top-actions">
-      <div class="profile-mini" id="btn-profile">
-        <div class="avatar-mini"></div>
-        <span class="profile-mini-name" id="hdr-name">—</span>
+      <!-- Guest mode (default) -->
+      <div id="guest-actions" style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn-login-top" id="btn-show-login">LOGIN</button>
+        <button class="btn-daftar-top" id="btn-show-daftar">DAFTAR</button>
       </div>
-      <div class="balance-chip" id="btn-balance-plus" title="Beli coin">
-        <span id="hdr-balance">0</span>
-        <span class="plus">+</span>
+      <!-- Logged-in mode (hidden until token exists) -->
+      <div id="user-actions" style="display: none; gap: 8px; align-items: center;">
+        <div class="profile-mini" id="btn-profile">
+          <div class="avatar-mini"></div>
+          <span class="profile-mini-name" id="hdr-name">—</span>
+        </div>
+        <div class="balance-chip" id="btn-balance-plus" title="Beli coin">
+          <span id="hdr-balance">0</span>
+          <span class="plus">+</span>
+        </div>
       </div>
     </div>
   </header>
@@ -872,8 +895,8 @@
 
   <!-- FOOTER -->
   <div class="lobby-footer">
-    <strong>GAMECUAN</strong> — Hub Game Hiburan Indonesia<br>
-    © 2026 GameCuan. Powered by Calavera Engine.
+    <strong>GAMEGACOR</strong> — Hub Game Hiburan Indonesia<br>
+    © 2026 GameGacor. Powered by Calavera Engine.
     <div class="legal-notice">
       ⚠️ Game ini menggunakan <strong>coin virtual</strong> (tidak bisa dicairkan jadi uang asli).<br>
       Untuk hiburan saja. 18+. Bukan situs perjudian.
@@ -1000,11 +1023,26 @@
     return data;
   }
 
-  function showApp() { $('login-screen').classList.add('hidden'); $('app').classList.add('show'); }
-  function showLogin() { $('login-screen').classList.remove('hidden'); $('app').classList.remove('show'); }
+  function openLoginModal() {
+    $('login-error').textContent = '';
+    $('login-screen').classList.add('show');
+    setTimeout(() => $('login-user')?.focus(), 100);
+  }
+  function closeLoginModal() {
+    $('login-screen').classList.remove('show');
+  }
+
+  function setLoggedInUI(isLoggedIn) {
+    $('guest-actions').style.display = isLoggedIn ? 'none' : 'flex';
+    $('user-actions').style.display = isLoggedIn ? 'flex' : 'none';
+  }
 
   function updateUI() {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setLoggedInUI(false);
+      return;
+    }
+    setLoggedInUI(true);
     $('hdr-name').textContent = currentUser.username;
     $('hdr-balance').textContent = fmtMoney(currentUser.balance);
     $('profile-username').textContent = '@' + currentUser.username;
@@ -1044,8 +1082,9 @@
       currentUser = result.user;
       localStorage.setItem(TOKEN_KEY, token);
       updateUI();
-      showApp();
-      if (result.bonus) toast('🎁 Bonus Rp ' + fmtMoney(result.bonus.amount) + ' dari admin!');
+      closeLoginModal();
+      toast('Selamat datang, ' + currentUser.username + '!');
+      if (result.bonus) setTimeout(() => toast('🎁 Bonus Rp ' + fmtMoney(result.bonus.amount) + ' dari admin!'), 2600);
       if (result.broadcast) setTimeout(() => alert('📢 Pesan Admin:\n\n' + result.broadcast), 500);
     } catch (e) {
       $('login-error').textContent = e.message || 'Login gagal';
@@ -1065,12 +1104,11 @@
   }
 
   async function autoLoginIfToken() {
-    if (!token) { showLogin(); return; }
-    showLoading(true);
+    // Public-first lobby: ALWAYS show app immediately. If token exists,
+    // silently load profile to upgrade UI from guest mode → user mode.
+    if (!token) { setLoggedInUI(false); return; }
     const ok = await loadProfile();
-    showLoading(false);
-    if (ok) showApp();
-    else { localStorage.removeItem(TOKEN_KEY); token = null; showLogin(); }
+    if (!ok) { localStorage.removeItem(TOKEN_KEY); token = null; setLoggedInUI(false); }
   }
 
   function logout() {
@@ -1087,16 +1125,29 @@
   $('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
   $('login-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('login-pass').focus(); });
 
-  $('btn-logout').addEventListener('click', logout);
-  $('btn-balance-plus').addEventListener('click', () => $('shop-modal').classList.add('show'));
-  $('btn-profile')?.addEventListener('click', () => $('profile-modal').classList.add('show'));
-
-  // Game launcher
-  $('game-calavera').addEventListener('click', () => {
-    // For now: open Calavera Riches game in same tab
-    // (Phase 1C will pass token so user doesn't re-login)
-    window.location.href = '/?from=lobby';
+  // Top-bar buttons (guest mode)
+  $('btn-show-login').addEventListener('click', openLoginModal);
+  $('btn-show-daftar').addEventListener('click', openLoginModal); // same form, auto-register on new username
+  $('btn-close-login').addEventListener('click', closeLoginModal);
+  // Close login modal on backdrop click (outside card)
+  $('login-screen').addEventListener('click', (e) => {
+    if (e.target.id === 'login-screen') closeLoginModal();
   });
+
+  // Game tile when not logged in → prompt login first
+  function guardAuth(action) {
+    if (!token || !currentUser) { openLoginModal(); return false; }
+    return action();
+  }
+
+  $('btn-logout').addEventListener('click', logout);
+  $('btn-balance-plus').addEventListener('click', () => guardAuth(() => $('shop-modal').classList.add('show')));
+  $('btn-profile')?.addEventListener('click', () => guardAuth(() => $('profile-modal').classList.add('show')));
+
+  // Game launcher — must be logged in to play
+  $('game-calavera').addEventListener('click', () => guardAuth(() => {
+    window.location.href = '/?from=lobby';
+  }));
 
   document.querySelectorAll('.game-tile.coming-soon').forEach((el) => {
     el.addEventListener('click', () => toast('Provider ini akan segera ditambahkan!'));
@@ -1172,11 +1223,11 @@
       status.textContent = 'Klik untuk klaim coin gratis harian!';
     }
   }
-  $('btn-claim-bonus').addEventListener('click', () => {
+  $('btn-claim-bonus').addEventListener('click', () => guardAuth(() => {
     localStorage.setItem(BONUS_KEY, String(Date.now()));
     toast('🎁 Dapat 100.000 coin! (placeholder — Phase 2 akan tambah ke saldo asli)');
     updateBonusUI();
-  });
+  }));
   updateBonusUI();
   setInterval(updateBonusUI, 60000);
 
