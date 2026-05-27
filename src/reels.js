@@ -488,7 +488,7 @@ export const Reels = {
     const rays = new PIXI.Graphics();
     const rayCount = 24;
     const rayLength = Math.max(reelW, reelH);
-    rays.beginFill(0xfbbf24, 0.18);
+    rays.beginFill(0xfbbf24, 0.32);
     for (let i = 0; i < rayCount; i++) {
       const a1 = (i / rayCount) * Math.PI * 2;
       const a2 = a1 + (Math.PI * 2 / rayCount) * 0.5;
@@ -503,8 +503,10 @@ export const Reels = {
     overlay.addChild(rays);
 
     // Layer 2: bright gold film (whole reel area, warm yellow tint)
+    // Boosted alpha 0.35 -> 0.48 so the gold wash is obviously visible over
+    // the spinning symbols, matching the WB 'reel is held' tint.
     const film = new PIXI.Graphics();
-    film.beginFill(0xf59e0b, 0.35);
+    film.beginFill(0xf59e0b, 0.48);
     film.drawRect(0, 0, reelW, reelH);
     film.endFill();
     overlay.addChild(film);
@@ -522,25 +524,30 @@ export const Reels = {
     streakLayer.addChild(streakMask);
     streakLayer.mask = streakMask;
     const streaks = [];
-    const STREAK_COUNT = 4;
+    const STREAK_COUNT = 5;
     for (let i = 0; i < STREAK_COUNT; i++) {
       const streak = new PIXI.Graphics();
-      // Narrow vertical light beam — bright gold to transparent ends.
-      // Drawn as a tall column with multiple fade stops via stacked rects.
-      const beamH = reelH * 0.55; // light tail length
-      const beamW = reelW * 0.42;
-      const segH = beamH / 8;
-      for (let s = 0; s < 8; s++) {
-        const t = s / 7; // 0 → 1 along beam
-        // Brightness peaks in middle, fades at top/bottom
-        const intensity = Math.sin(t * Math.PI) * 0.85;
-        streak.beginFill(0xfff5d6, intensity);
+      // Narrow vertical light beam — bright pure white at peak, tapering to
+      // warm gold at the edges. Stacked-rect gradient so PIXI Graphics can
+      // approximate a smooth linear gradient.
+      const beamH = reelH * 0.7;  // longer tail
+      const beamW = reelW * 0.55; // wider
+      const segs = 12;
+      const segH = beamH / segs;
+      for (let s = 0; s < segs; s++) {
+        const t = s / (segs - 1); // 0 → 1 along beam
+        // Pure white core in middle, fades to nothing at tips.
+        const intensity = Math.sin(t * Math.PI) * 1.0;
+        // Color shifts from gold (ends) through white (middle)
+        const isCenter = Math.abs(t - 0.5) < 0.18;
+        const color = isCenter ? 0xffffff : 0xfff5d6;
+        streak.beginFill(color, intensity);
         streak.drawRect(0, s * segH, beamW, segH + 1);
         streak.endFill();
       }
       streak.x = (reelW - beamW) / 2;
       streak.y = -beamH; // start above reel
-      streak.alpha = 0.85;
+      streak.alpha = 1;
       streakLayer.addChild(streak);
       streaks.push(streak);
     }
