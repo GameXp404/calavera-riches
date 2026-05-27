@@ -111,6 +111,15 @@ export const FREE_SPIN_RETRIGGER = {
 export const ANTE_BET_MULT = 1.25;
 export const ANTE_BET_SCATTER_BOOST = 2;
 
+// Buy Bonus Feature (PG Soft signature): 3 tier opsi langsung lompat ke Free Spin
+// tanpa nunggu scatter alami. Harga per bet × multiplier. Spins dari FREE_SPIN_AWARDS.
+// id digunakan di main.js untuk decide scatterCount (passes to FreeSpin.start).
+export const BUY_FEATURE_OPTIONS = [
+  { id: 'regular', label: 'BELI FITUR',  costMult: 60,  scatterCount: 3, tier: 'normal' },
+  { id: 'super',   label: 'SUPER BELI',  costMult: 200, scatterCount: 4, tier: 'super' },
+  { id: 'mega',    label: 'MEGA BELI',   costMult: 500, scatterCount: 5, tier: 'mega' },
+];
+
 export const WIN_TIERS = {
   NORMAL:    { min: 0,   duration: 800,  label: '' },
   BIG:       { min: 10,  duration: 2500, label: 'BIG WIN' },

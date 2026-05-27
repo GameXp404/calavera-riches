@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import '../css/style.css';
-import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, WIN_TIERS, ANTE_BET_MULT, fmtMoney } from './config.js';
+import { GAME_CONFIG, ASSET_PATH, FREE_SPIN_AWARDS, MULTIPLIER_BASE_POOL, DIFFICULTY_PROFILES, GAME_VERSION, BUILD_DATE, WIN_TIERS, ANTE_BET_MULT, BUY_FEATURE_OPTIONS, fmtMoney } from './config.js';
 import { Difficulty } from './difficulty.js';
 import { evaluateWays, countScatters } from './ways.js';
 import { Multiplier } from './multiplier.js';
@@ -1231,52 +1231,69 @@ const Game = {
   },
 
   wireBuyFeature() {
-    const BUY_COST_MULT = 75; // 75× bet to buy free spin feature
     const btn = document.getElementById('btn-buy-feature');
     const modal = document.getElementById('buy-modal');
-    const costEl = document.getElementById('buy-cost-amount');
+    const tierList = document.getElementById('buy-tier-list');
     const cancelBtn = document.getElementById('buy-cancel');
-    const startBtn = document.getElementById('buy-start');
-    if (!btn || !modal) return;
+    if (!btn || !modal || !tierList) return;
 
-    const refreshCost = () => {
-      const cost = this.state.bet * BUY_COST_MULT;
-      costEl.textContent = fmtMoney(cost);
-    };
-
-    btn.addEventListener('click', () => {
-      if (FreeSpin.active) return;
-      refreshCost();
-      modal.classList.remove('hidden');
-    });
-    cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
-
-    startBtn.addEventListener('click', () => {
+    // Trigger free spin starting at given scatter count (3/4/5).
+    const triggerBuyFS = (scatterCount) => {
       if (FreeSpin.active || Reels.spinning) return;
-      const cost = this.state.bet * BUY_COST_MULT;
-      if (this.state.balance < cost) {
-        alert('Saldo tidak cukup untuk membeli fitur (perlu ' + fmtMoney(cost) + ').');
-        return;
-      }
-      this.state.balance -= cost;
-      this.updateHUD();
-      modal.classList.add('hidden');
-
-      // Trigger free spin with 3-scatter equivalent award
-      const award = FreeSpin.start(3);
-      // E3: switch music — fade out base game music, start dramatic FS music
+      const award = FreeSpin.start(scatterCount);
       Audio.stopGameMusic?.(900);
       Audio.freeSpinTrigger();
       setTimeout(() => Audio.playFreeSpinMusic?.(), 1400);
-      showTransitionIntro(this.app, this.app.stage, 3, award, award.startMult, () => {
+      showTransitionIntro(this.app, this.app.stage, scatterCount, award, award.startMult, () => {
         Multiplier.startFreeSpin(award.startMult);
         Reels.enableFreeSpinMode(true);
         this.updateFreeSpinHUD();
         this.updateMultiplierBadges();
         setTimeout(() => this.spin(), 600);
       });
+    };
+
+    // Re-render tier buttons every time modal opens so cost reflects current bet.
+    const renderTiers = () => {
+      tierList.innerHTML = '';
+      BUY_FEATURE_OPTIONS.forEach((opt) => {
+        const cost = this.state.bet * opt.costMult;
+        const award = FREE_SPIN_AWARDS[opt.scatterCount];
+        const spins = award ? award.spins : '?';
+        const tierBtn = document.createElement('button');
+        tierBtn.className = `buy-tier tier-${opt.tier}`;
+        const canAfford = this.state.balance >= cost;
+        if (!canAfford) tierBtn.disabled = true;
+        tierBtn.innerHTML = `
+          <div>
+            <span class="tier-label">${opt.label}</span>
+            <span class="tier-sub">${opt.scatterCount} SCATTER · ${spins} PUTARAN</span>
+          </div>
+          <span class="tier-cost">${fmtMoney(cost)}</span>
+        `;
+        tierBtn.addEventListener('click', () => {
+          if (FreeSpin.active || Reels.spinning) return;
+          if (this.state.balance < cost) {
+            alert(`Saldo tidak cukup untuk ${opt.label} (perlu ${fmtMoney(cost)}).`);
+            return;
+          }
+          this.state.balance -= cost;
+          this.updateHUD();
+          this.savePlayerPrefs();
+          modal.classList.add('hidden');
+          triggerBuyFS(opt.scatterCount);
+        });
+        tierList.appendChild(tierBtn);
+      });
+    };
+
+    btn.addEventListener('click', () => {
+      if (FreeSpin.active) return;
+      renderTiers();
+      modal.classList.remove('hidden');
     });
+    cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
   },
 
   setTurbo(level) {

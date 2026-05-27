@@ -534,18 +534,16 @@
   </div>
 
   <div id="buy-modal" class="hidden">
-    <div class="buy-card">
+    <div class="buy-card buy-card-tiered">
       <h2 class="buy-title">BELI FITUR</h2>
-      <div class="buy-cost-wrap">
-        <div class="buy-cost-label">BIAYA</div>
-        <div class="buy-cost-amount" id="buy-cost-amount">0</div>
-      </div>
       <p class="buy-desc">
-        Pilih "MULAI" untuk memicu Fitur Putaran Gratis pada besaran taruhan saat ini
+        Lompat langsung ke Putaran Gratis. Pilih level intensitas yang kamu mau:
       </p>
+      <div class="buy-tier-list" id="buy-tier-list">
+        <!-- Tier cards injected dari config.BUY_FEATURE_OPTIONS via main.js -->
+      </div>
       <div class="buy-actions">
         <button id="buy-cancel" class="buy-btn cancel">BATALKAN</button>
-        <button id="buy-start" class="buy-btn start">MULAI</button>
       </div>
     </div>
   </div>
