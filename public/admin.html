@@ -269,12 +269,25 @@
 <script>
 (function() {
   'use strict';
-  const ADMIN_PASS = 'admin123';
-  const SESSION_KEY = 'calavera_admin_session';
-  const PLAYER_KEY_RE = /^calavera_([a-zA-Z0-9_\-]+)_player$/;
-
+  const SESSION_KEY = 'calavera_admin_pass'; // stores admin password during session
   const fmtMoney = (n) => Math.floor(Number(n) || 0).toLocaleString('id-ID');
   const $ = (id) => document.getElementById(id);
+
+  // ============================================================
+  // API HELPER — adds X-Admin-Password header
+  // ============================================================
+  async function api(path, opts = {}) {
+    const headers = opts.headers || {};
+    headers['X-Admin-Password'] = sessionStorage.getItem(SESSION_KEY) || '';
+    if (opts.body && typeof opts.body !== 'string') {
+      headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(opts.body);
+    }
+    const res = await fetch(path, { ...opts, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    return data;
+  }
 
   function toast(msg, type = 'success') {
     const t = $('toast');
@@ -284,19 +297,13 @@
   }
 
   function isLoggedIn() {
-    return sessionStorage.getItem(SESSION_KEY) === '1';
+    return !!sessionStorage.getItem(SESSION_KEY);
   }
 
-  function showDashboard() {
+  async function showDashboard() {
     $('login-screen').style.display = 'none';
     $('dashboard').style.display = 'block';
-    refresh();
     $('hdr-now').textContent = new Date().toLocaleString('id-ID');
-    // Init settings UI
-    renderDiff();
-    renderMaintenance();
-    renderBroadcast();
-    renderJP();
     if (!showDashboard._bound) {
       bindDiff();
       bindReset();
@@ -305,15 +312,22 @@
       bindJP();
       showDashboard._bound = true;
     }
+    await refresh();
+    await renderSettings();
+    await renderJP();
   }
 
-  function tryLogin() {
+  async function tryLogin() {
     const pass = $('adm-pass').value;
-    if (pass === ADMIN_PASS) {
-      sessionStorage.setItem(SESSION_KEY, '1');
+    if (!pass) { $('adm-err').textContent = 'Password kosong!'; return; }
+    sessionStorage.setItem(SESSION_KEY, pass);
+    // Verify by calling GET /api/admin/users
+    try {
+      await api('/api/admin/users');
       $('adm-err').textContent = '';
       showDashboard();
-    } else {
+    } catch (e) {
+      sessionStorage.removeItem(SESSION_KEY);
       $('adm-err').textContent = 'Password salah!';
       $('adm-pass').value = '';
     }
@@ -326,38 +340,34 @@
     location.reload();
   });
 
-  function getAllUsers() {
-    const users = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      const m = key?.match(PLAYER_KEY_RE);
-      if (!m) continue;
-      const username = m[1];
-      let data;
-      try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-      const stats = data.stats || {};
-      users.push({
-        username,
-        balance: Number(data.balance) || 0,
-        turbo: Number(data.turbo) || 0,
-        betIdx: Number(data.betIdx) || 0,
-        anteBet: !!data.anteBet,
-        hasPassword: !!data.passwordHash,
-        frozen: !!data.frozen,
-        pendingBonus: data.pendingBonus?.amount || 0,
-        registeredAt: data.registeredAt || null,
-        lastLogin: data.lastLogin || null,
-        lastSpin: data.lastSpin || null,
-        spins: Number(stats.spins) || 0,
-        totalBet: Number(stats.totalBet) || 0,
-        totalWin: Number(stats.totalWin) || 0,
-        biggestWin: Number(stats.biggestWin) || 0,
-      });
+  // ============================================================
+  // USERS — load from API
+  // ============================================================
+  async function getAllUsers() {
+    try {
+      const data = await api('/api/admin/users');
+      // Map API field names → existing UI field names (snake_case → camelCase)
+      return (data.users || []).map((u) => ({
+        username: u.username,
+        balance: Number(u.balance) || 0,
+        spins: Number(u.spins) || 0,
+        totalBet: Number(u.total_bet) || 0,
+        totalWin: Number(u.total_win) || 0,
+        biggestWin: Number(u.biggest_win) || 0,
+        frozen: !!u.frozen,
+        pendingBonus: Number(u.pending_bonus_amount) || 0,
+        hasPassword: !!u.hasPassword,
+        registeredAt: u.registered_at || null,
+        lastLogin: u.last_login || null,
+        lastSpin: u.last_spin || null,
+      }));
+    } catch (e) {
+      toast('Gagal load users: ' + e.message, 'error');
+      return [];
     }
-    users.sort((a, b) => b.balance - a.balance);
-    return users;
   }
 
+  // SHA-256 not used (server handles password hashing) — but kept for reference
   async function sha256(plain) {
     const buf = new TextEncoder().encode(plain);
     const digest = await crypto.subtle.digest('SHA-256', buf);
@@ -365,7 +375,8 @@
   }
 
   function activeUser() {
-    return localStorage.getItem('calavera_user') || '';
+    // Not authoritative in cloud mode — admin sees all users equally
+    return '';
   }
 
   function fmtRelTime(iso) {
@@ -380,8 +391,8 @@
     return new Date(iso).toLocaleDateString('id-ID');
   }
 
-  function refresh() {
-    const users = getAllUsers();
+  async function refresh() {
+    const users = await getAllUsers();
     const active = activeUser();
     const tbody = $('user-rows');
     tbody.innerHTML = '';
@@ -407,7 +418,6 @@
     $('stat-spins').textContent = fmtMoney(totalSpin);
     $('stat-totalbet').textContent = fmtMoney(totalBet);
     $('stat-totalwin').textContent = fmtMoney(totalWin);
-    // Aggregate RTP: (totalWin / totalBet) * 100. Target ~96.5%.
     if (totalBet > 0) {
       const rtp = (totalWin / totalBet) * 100;
       $('stat-rtp').textContent = rtp.toFixed(1) + '%';
@@ -418,7 +428,7 @@
     $('hdr-count').textContent = users.length + ' user';
 
     renderLeaderboard(users);
-    renderBigWinLog();
+    await renderBigWinLog();
   }
 
   function renderLeaderboard(users) {
@@ -445,8 +455,15 @@
     });
   }
 
-  function renderBigWinLog() {
-    const log = (() => { try { return JSON.parse(localStorage.getItem('calavera_bigwin_log') || '[]'); } catch (_) { return []; } })();
+  async function renderBigWinLog() {
+    let log = [];
+    try {
+      const data = await api('/api/admin/bigwins');
+      log = (data.wins || []).map((w) => ({
+        at: w.occurred_at, user: w.username, tier: w.tier,
+        amount: w.amount, mult: Number(w.multiplier) || 0,
+      }));
+    } catch (e) { console.warn('[bigwins load]', e); }
     const tbody = $('bigwin-rows');
     tbody.innerHTML = '';
     if (log.length === 0) {
@@ -455,7 +472,7 @@
     }
     log.forEach((entry) => {
       const tr = document.createElement('tr');
-      const tierClass = 'tier-' + entry.tier.toLowerCase();
+      const tierClass = 'tier-' + entry.tier.toLowerCase().split('-')[0];
       tr.innerHTML = `
         <td style="font-size:11px;color:var(--muted);">${fmtRelTime(entry.at)}</td>
         <td class="user-cell">${entry.user}</td>
@@ -504,51 +521,36 @@
     return tr;
   }
 
-  function sendBonus(username) {
-    const amtRaw = prompt(`Kirim bonus ke "${username}":\n\nMasukkan jumlah (Rp). Bonus akan ditambahkan saat user login berikutnya & user lihat notifikasi.`, '100000');
+  async function sendBonus(username) {
+    const amtRaw = prompt(`Kirim bonus ke "${username}":\n\nMasukkan jumlah (Rp).`, '100000');
     if (amtRaw === null) return;
     const amt = parseInt(amtRaw, 10);
     if (!Number.isFinite(amt) || amt <= 0) { toast('Jumlah tidak valid', 'error'); return; }
-    const key = `calavera_${username}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    const prevAmt = data.pendingBonus?.amount || 0;
-    data.pendingBonus = { amount: prevAmt + amt, queuedAt: new Date().toISOString() };
-    localStorage.setItem(key, JSON.stringify(data));
-    toast(`Bonus Rp ${fmtMoney(amt)} antri untuk ${username}`, 'success');
-    refresh();
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, pending_bonus: amt } });
+      toast(`Bonus Rp ${fmtMoney(amt)} antri untuk ${username}`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
-  function toggleFreeze(username, freeze) {
+  async function toggleFreeze(username, freeze) {
     const action = freeze ? 'BEKUKAN' : 'UNFREEZE';
     if (!confirm(`${action} user "${username}"?\n\n${freeze ? 'User tidak bisa login sampai di-unfreeze.' : 'User bisa login kembali.'}`)) return;
-    const key = `calavera_${username}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    if (freeze) data.frozen = true;
-    else delete data.frozen;
-    localStorage.setItem(key, JSON.stringify(data));
-    toast(`${username} ${freeze ? 'dibekukan' : 'diaktifkan'}`, 'success');
-    refresh();
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, frozen: freeze } });
+      toast(`${username} ${freeze ? 'dibekukan' : 'diaktifkan'}`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   async function setPassword(username) {
-    const newPass = prompt(`Set password baru untuk user "${username}":\n\n(Kosongkan untuk hapus password — user bisa pakai apapun saat login berikutnya)`);
-    if (newPass === null) return; // cancelled
-    const key = `calavera_${username}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    if (newPass === '') {
-      delete data.passwordHash;
-      localStorage.setItem(key, JSON.stringify(data));
-      toast(`Password ${username} dihapus`, 'success');
-    } else {
-      data.passwordHash = await sha256(newPass);
-      data.registeredAt = data.registeredAt || new Date().toISOString();
-      localStorage.setItem(key, JSON.stringify(data));
-      toast(`Password ${username} diset`, 'success');
-    }
-    refresh();
+    const newPass = prompt(`Set password baru untuk user "${username}":\n\n(Kosongkan untuk hapus password)`);
+    if (newPass === null) return;
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, set_password: newPass } });
+      toast(`Password ${username} ${newPass ? 'diset' : 'dihapus'}`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   async function addUser() {
@@ -556,193 +558,150 @@
     if (!username) return;
     const clean = username.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 24);
     if (!clean) { toast('Username tidak valid', 'error'); return; }
-    const key = `calavera_${clean}_player`;
-    if (localStorage.getItem(key)) {
-      toast(`User "${clean}" sudah ada`, 'error');
-      return;
-    }
     const pass = prompt(`Password untuk "${clean}":`);
     if (!pass) { toast('Password kosong, dibatalkan', 'error'); return; }
     const balRaw = prompt('Balance awal (Rp):', '1000000');
     const balance = Math.max(0, parseInt(balRaw, 10) || 0);
-    const fresh = {
-      passwordHash: await sha256(pass),
-      registeredAt: new Date().toISOString(),
-      balance,
-      turbo: 0,
-      betIdx: 4,
-      anteBet: false,
-      stats: { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 },
-    };
-    localStorage.setItem(key, JSON.stringify(fresh));
-    toast(`User "${clean}" dibuat dengan balance Rp ${fmtMoney(balance)}`, 'success');
-    refresh();
+    try {
+      await api('/api/admin/users', { method: 'POST', body: { username: clean, password: pass, balance } });
+      toast(`User "${clean}" dibuat (Rp ${fmtMoney(balance)})`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
-  function saveBalance(username, input) {
+  async function saveBalance(username, input) {
     const newBal = parseInt(input.value, 10);
-    if (!Number.isFinite(newBal) || newBal < 0) {
-      toast('Balance tidak valid', 'error');
-      return;
-    }
-    const key = `calavera_${username}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    data.balance = newBal;
-    localStorage.setItem(key, JSON.stringify(data));
-    toast(`Balance ${username} disimpan: Rp ${fmtMoney(newBal)}`, 'success');
-    refresh();
+    if (!Number.isFinite(newBal) || newBal < 0) { toast('Balance tidak valid', 'error'); return; }
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, balance: newBal } });
+      toast(`Balance ${username} → Rp ${fmtMoney(newBal)}`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
-  function resetStats(username) {
-    if (!confirm(`Reset semua stats user "${username}"?\n\n(balance TIDAK diubah, hanya spins/totalBet/totalWin/biggestWin)`)) return;
-    const key = `calavera_${username}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    data.stats = { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 };
-    localStorage.setItem(key, JSON.stringify(data));
-    toast(`Stats ${username} di-reset`, 'success');
-    refresh();
+  async function resetStats(username) {
+    if (!confirm(`Reset semua stats user "${username}"?\n\n(balance TIDAK diubah)`)) return;
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, action: 'reset_stats' } });
+      toast(`Stats ${username} di-reset`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
-  function deleteUser(username) {
-    if (!confirm(`Hapus user "${username}" beserta SEMUA data (balance, stats, auto-config)?\n\nTidak bisa di-undo!`)) return;
-    localStorage.removeItem(`calavera_${username}_player`);
-    localStorage.removeItem(`calavera_${username}_auto`);
-    if (activeUser() === username) {
-      localStorage.removeItem('calavera_user');
-    }
-    toast(`User ${username} dihapus`, 'success');
-    refresh();
+  async function deleteUser(username) {
+    if (!confirm(`Hapus user "${username}" beserta SEMUA data?\n\nTidak bisa di-undo!`)) return;
+    try {
+      await api('/api/admin/users', { method: 'PATCH', body: { username, action: 'delete' } });
+      toast(`User ${username} dihapus`, 'success');
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   $('refresh-btn').addEventListener('click', refresh);
   $('search-input').addEventListener('input', refresh);
   $('add-user-btn').addEventListener('click', addUser);
-  $('clear-log-btn').addEventListener('click', () => {
+  $('clear-log-btn').addEventListener('click', async () => {
     if (!confirm('Hapus semua big win log?')) return;
-    localStorage.removeItem('calavera_bigwin_log');
-    renderBigWinLog();
-    toast('Log dihapus', 'success');
+    try { await api('/api/admin/bigwins', { method: 'DELETE' }); await renderBigWinLog(); toast('Log dihapus', 'success'); }
+    catch (e) { toast('Gagal: ' + e.message, 'error'); }
   });
 
-  $('export-btn').addEventListener('click', () => {
-    const users = getAllUsers();
+  $('export-btn').addEventListener('click', async () => {
+    const users = await getAllUsers();
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), users }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `calavera-users-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `gamegacor-users-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast(`Export ${users.length} user`, 'success');
   });
 
-  $('delete-all-btn').addEventListener('click', () => {
-    const users = getAllUsers();
+  $('delete-all-btn').addEventListener('click', async () => {
+    const users = await getAllUsers();
     if (users.length === 0) { toast('Tidak ada user untuk dihapus', 'error'); return; }
-    if (!confirm(`HAPUS SEMUA ${users.length} user?\n\nIni akan menghapus:\n- Balance & stats semua user\n- Auto-spin config\n- Session aktif\n\nTidak bisa di-undo!`)) return;
+    if (!confirm(`HAPUS SEMUA ${users.length} user?\n\nTidak bisa di-undo!`)) return;
     if (!confirm('Konfirmasi sekali lagi — yakin hapus SEMUA?')) return;
-    users.forEach((u) => {
-      localStorage.removeItem(`calavera_${u.username}_player`);
-      localStorage.removeItem(`calavera_${u.username}_auto`);
-    });
-    localStorage.removeItem('calavera_user');
+    for (const u of users) {
+      try { await api('/api/admin/users', { method: 'PATCH', body: { username: u.username, action: 'delete' } }); }
+      catch (_) {}
+    }
     toast(`${users.length} user dihapus`, 'success');
-    refresh();
+    await refresh();
   });
 
   // ============================================================
-  // PROGRESSIVE JACKPOT
+  // PROGRESSIVE JACKPOT (API-backed)
   // ============================================================
-  const JP_KEY = 'calavera_jackpot';
-  const JP_DEFAULT = {
-    enabled: false,
-    mini:  { seed: 500_000,    contribPct: 0.5,  pool: 500_000 },
-    minor: { seed: 2_500_000,  contribPct: 1.0,  pool: 2_500_000 },
-    major: { seed: 10_000_000, contribPct: 1.5,  pool: 10_000_000 },
-    grand: { seed: 50_000_000, contribPct: 2.0,  pool: 50_000_000 },
-    lastTriggered: null,
-  };
   const JP_TIERS = [
     { key: 'mini',  label: 'MINI',  color: '#4d9d6b', emoji: '🟢' },
     { key: 'minor', label: 'MINOR', color: '#3b8ec4', emoji: '🔵' },
     { key: 'major', label: 'MAJOR', color: '#c44d3b', emoji: '🔴' },
     { key: 'grand', label: 'GRAND', color: '#ffb84d', emoji: '🟡' },
   ];
-  function loadJP() {
+  let _jpState = null;
+  async function loadJP() {
     try {
-      const s = JSON.parse(localStorage.getItem(JP_KEY) || 'null');
-      if (!s) return JP_DEFAULT;
-      // merge with defaults for safety
-      return {
-        enabled: !!s.enabled,
-        mini:  { ...JP_DEFAULT.mini,  ...(s.mini  || {}) },
-        minor: { ...JP_DEFAULT.minor, ...(s.minor || {}) },
-        major: { ...JP_DEFAULT.major, ...(s.major || {}) },
-        grand: { ...JP_DEFAULT.grand, ...(s.grand || {}) },
-        lastTriggered: s.lastTriggered || null,
-      };
-    } catch (_) { return JP_DEFAULT; }
+      const s = await api('/api/admin/jackpot');
+      _jpState = s;
+      return s;
+    } catch (e) { console.warn('[jp load]', e); return null; }
   }
-  function saveJP(state) {
-    localStorage.setItem(JP_KEY, JSON.stringify(state));
-  }
-  function renderJP() {
-    const s = loadJP();
+  async function renderJP() {
+    const s = await loadJP();
+    if (!s) return;
     const t = $('jp-enabled-toggle');
     t.textContent = s.enabled ? 'ON' : 'OFF';
     t.className = 'toggle-btn ' + (s.enabled ? 'on' : 'off');
     const tbody = $('jp-tier-rows');
     tbody.innerHTML = '';
     JP_TIERS.forEach((tier) => {
-      const data = s[tier.key];
+      const seed = s[`${tier.key}_seed`];
+      const pct = s[`${tier.key}_pct`];
+      const pool = s[`${tier.key}_pool`];
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><span style="color:${tier.color};font-weight:700;letter-spacing:1px;">${tier.emoji} ${tier.label}</span></td>
-        <td class="num"><input type="number" class="jp-seed-input" data-tier="${tier.key}" value="${data.seed}" min="0" step="100000" style="width:130px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;"></td>
-        <td class="num"><input type="number" class="jp-pct-input" data-tier="${tier.key}" value="${data.contribPct}" min="0" max="100" step="0.1" style="width:70px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;">%</td>
-        <td class="num" style="color:${tier.color};font-weight:700;font-size:15px;">${fmtMoney(data.pool)}</td>
+        <td class="num"><input type="number" class="jp-seed-input" data-tier="${tier.key}" value="${seed}" min="0" step="100000" style="width:130px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;"></td>
+        <td class="num"><input type="number" class="jp-pct-input" data-tier="${tier.key}" value="${pct}" min="0" max="100" step="0.1" style="width:70px;padding:4px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:3px;text-align:right;">%</td>
+        <td class="num" style="color:${tier.color};font-weight:700;font-size:15px;">${fmtMoney(pool)}</td>
         <td><button class="small-btn jp-trigger-btn" data-tier="${tier.key}" style="background:${tier.color};color:#1a0a1f;border:none;font-weight:700;">🎰 Trigger</button></td>
       `;
       tbody.appendChild(tr);
     });
-    // Last triggered info
-    if (s.lastTriggered) {
-      const lt = s.lastTriggered;
-      const hint = `Trigger terakhir: <strong>${lt.tier.toUpperCase()}</strong> → <strong>${lt.user}</strong> (Rp ${fmtMoney(lt.amount)}) — ${fmtRelTime(lt.at)}`;
-      const existing = document.querySelector('#jp-last-trigger');
-      if (existing) existing.innerHTML = hint;
-    }
   }
   function bindJP() {
-    $('jp-enabled-toggle').addEventListener('click', () => {
-      const s = loadJP();
-      s.enabled = !s.enabled;
-      saveJP(s);
-      renderJP();
-      toast('Jackpot ' + (s.enabled ? 'AKTIF' : 'OFF'), 'success');
+    $('jp-enabled-toggle').addEventListener('click', async () => {
+      const s = _jpState || await loadJP();
+      try {
+        await api('/api/admin/jackpot', { method: 'PATCH', body: { enabled: !s.enabled } });
+        await renderJP();
+        toast('Jackpot ' + (!s.enabled ? 'AKTIF' : 'OFF'), 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
-    $('jp-save-btn').addEventListener('click', () => {
-      const s = loadJP();
+    $('jp-save-btn').addEventListener('click', async () => {
+      const patch = {};
       document.querySelectorAll('.jp-seed-input').forEach((inp) => {
-        s[inp.dataset.tier].seed = Math.max(0, parseInt(inp.value, 10) || 0);
+        patch[`${inp.dataset.tier}_seed`] = Math.max(0, parseInt(inp.value, 10) || 0);
       });
       document.querySelectorAll('.jp-pct-input').forEach((inp) => {
-        s[inp.dataset.tier].contribPct = Math.max(0, Math.min(100, parseFloat(inp.value) || 0));
+        patch[`${inp.dataset.tier}_pct`] = Math.max(0, Math.min(100, parseFloat(inp.value) || 0));
       });
-      saveJP(s);
-      toast('Config jackpot disimpan', 'success');
+      try {
+        await api('/api/admin/jackpot', { method: 'PATCH', body: patch });
+        await renderJP();
+        toast('Config jackpot disimpan', 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
-    $('jp-reset-btn').addEventListener('click', () => {
+    $('jp-reset-btn').addEventListener('click', async () => {
       if (!confirm('Reset SEMUA pool ke seed amount?\n\nKontribusi yang sudah masuk akan HANGUS.')) return;
-      const s = loadJP();
-      JP_TIERS.forEach((tier) => { s[tier.key].pool = s[tier.key].seed; });
-      saveJP(s);
-      renderJP();
-      toast('Pool di-reset ke seed', 'success');
+      try {
+        await api('/api/admin/jackpot', { method: 'POST', body: { action: 'reset' } });
+        await renderJP();
+        toast('Pool di-reset ke seed', 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
-    // Event delegation — buttons get rebuilt on each renderJP call, so attach to parent tbody
     const tbody = $('jp-tier-rows');
     if (tbody && !tbody._delegated) {
       tbody.addEventListener('click', (e) => {
@@ -752,84 +711,51 @@
       tbody._delegated = true;
     }
   }
-  function triggerJackpot(tierKey) {
-    const users = getAllUsers();
+  async function triggerJackpot(tierKey) {
+    const users = await getAllUsers();
     if (users.length === 0) { toast('Tidak ada user terdaftar', 'error'); return; }
     const userList = users.map((u, i) => `${i + 1}. ${u.username}`).join('\n');
     const choice = prompt(`🎰 Trigger Jackpot ${tierKey.toUpperCase()} ke user mana?\n\n${userList}\n\nKetik nomor atau username:`);
     if (!choice) return;
     let target = null;
     const num = parseInt(choice, 10);
-    if (Number.isFinite(num) && num >= 1 && num <= users.length) {
-      target = users[num - 1].username;
-    } else {
+    if (Number.isFinite(num) && num >= 1 && num <= users.length) target = users[num - 1].username;
+    else {
       const found = users.find((u) => u.username.toLowerCase() === choice.toLowerCase().trim());
       if (found) target = found.username;
     }
     if (!target) { toast('User tidak ditemukan', 'error'); return; }
 
-    const s = loadJP();
-    const pool = s[tierKey].pool;
+    const s = _jpState || await loadJP();
+    const pool = s[`${tierKey}_pool`];
     if (pool <= 0) { toast('Pool kosong', 'error'); return; }
-    if (!confirm(`Konfirmasi: berikan jackpot ${tierKey.toUpperCase()} sebesar Rp ${fmtMoney(pool)} kepada "${target}"?\n\nPool akan reset ke seed (Rp ${fmtMoney(s[tierKey].seed)}).`)) return;
+    if (!confirm(`Konfirmasi: berikan jackpot ${tierKey.toUpperCase()} sebesar Rp ${fmtMoney(pool)} kepada "${target}"?`)) return;
 
-    // Queue as pendingBonus on target user with tier marker
-    const key = `calavera_${target}_player`;
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
-    const prevAmt = data.pendingBonus?.amount || 0;
-    data.pendingBonus = {
-      amount: prevAmt + pool,
-      jackpotTier: tierKey,
-      queuedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(key, JSON.stringify(data));
-
-    // Reset pool to seed + record trigger
-    s[tierKey].pool = s[tierKey].seed;
-    s.lastTriggered = { tier: tierKey, user: target, amount: pool, at: new Date().toISOString() };
-    saveJP(s);
-
-    // Big-win log entry
     try {
-      const LOG_KEY = 'calavera_bigwin_log';
-      let log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      log.unshift({
-        user: target, tier: 'JACKPOT-' + tierKey.toUpperCase(),
-        amount: pool, bet: 0, mult: 0, at: new Date().toISOString(),
-      });
-      if (log.length > 50) log = log.slice(0, 50);
-      localStorage.setItem(LOG_KEY, JSON.stringify(log));
-    } catch (_) {}
-
-    toast(`Jackpot ${tierKey.toUpperCase()} (Rp ${fmtMoney(pool)}) → ${target}`, 'success');
-    renderJP();
-    refresh();
+      const result = await api('/api/admin/jackpot', { method: 'POST', body: { action: 'trigger', tier: tierKey, username: target } });
+      toast(`Jackpot ${tierKey.toUpperCase()} (Rp ${fmtMoney(result.amount)}) → ${target}`, 'success');
+      await renderJP();
+      await refresh();
+    } catch (e) { toast('Gagal: ' + e.message, 'error'); }
   }
 
   // ============================================================
-  // MAINTENANCE + BROADCAST (global controls)
+  // SETTINGS (Maintenance + Broadcast + Difficulty) — API-backed
   // ============================================================
-  function renderMaintenance() {
-    const on = localStorage.getItem('calavera_maintenance') === '1';
+  let _settings = {};
+  async function loadSettings() {
+    try { _settings = await api('/api/admin/settings'); return _settings; }
+    catch (e) { console.warn('[settings load]', e); return {}; }
+  }
+  async function renderSettings() {
+    await loadSettings();
+    // Maintenance
+    const maint = _settings.maintenance === true;
     const t = $('maint-toggle');
-    t.textContent = on ? 'ON' : 'OFF';
-    t.className = 'toggle-btn ' + (on ? 'on' : 'off');
-  }
-  function bindMaintenance() {
-    $('maint-toggle').addEventListener('click', () => {
-      const on = localStorage.getItem('calavera_maintenance') === '1';
-      const next = !on;
-      if (next) {
-        if (!confirm('Aktifkan maintenance mode?\n\nSEMUA user tidak bisa login sampai dimatikan.')) return;
-      }
-      localStorage.setItem('calavera_maintenance', next ? '1' : '0');
-      renderMaintenance();
-      toast('Maintenance ' + (next ? 'ON' : 'OFF'), 'success');
-    });
-  }
-  function renderBroadcast() {
-    const b = (() => { try { return JSON.parse(localStorage.getItem('calavera_broadcast') || 'null'); } catch (_) { return null; } })();
+    t.textContent = maint ? 'ON' : 'OFF';
+    t.className = 'toggle-btn ' + (maint ? 'on' : 'off');
+    // Broadcast
+    const b = _settings.broadcast;
     const status = $('broadcast-status');
     if (b && b.message) {
       const dismissed = Object.keys(b.dismissedBy || {}).length;
@@ -840,69 +766,90 @@
       status.textContent = 'tidak ada';
       status.style.color = 'var(--muted)';
     }
+    // Difficulty
+    const cur = _settings.difficulty || 'normal';
+    document.querySelectorAll('.diff-btn').forEach((bn) => {
+      bn.classList.toggle('active', bn.dataset.level === cur);
+    });
+    if ($('diff-current')) $('diff-current').textContent = cur.toUpperCase().replace('-', ' ');
+  }
+  function bindMaintenance() {
+    $('maint-toggle').addEventListener('click', async () => {
+      const next = _settings.maintenance !== true;
+      if (next && !confirm('Aktifkan maintenance mode?\n\nSEMUA user tidak bisa login sampai dimatikan.')) return;
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'maintenance', value: next } });
+        await renderSettings();
+        toast('Maintenance ' + (next ? 'ON' : 'OFF'), 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
+    });
   }
   function bindBroadcast() {
-    $('broadcast-send').addEventListener('click', () => {
+    $('broadcast-send').addEventListener('click', async () => {
       const msg = $('broadcast-input').value.trim();
       if (!msg) { toast('Pesan kosong', 'error'); return; }
       if (msg.length > 500) { toast('Pesan terlalu panjang (max 500)', 'error'); return; }
-      localStorage.setItem('calavera_broadcast', JSON.stringify({
-        message: msg,
-        postedAt: new Date().toISOString(),
-        dismissedBy: {},
-      }));
-      renderBroadcast();
-      toast('Broadcast dikirim ke semua user', 'success');
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'broadcast', value: { message: msg, postedAt: new Date().toISOString(), dismissedBy: {} } } });
+        await renderSettings();
+        toast('Broadcast dikirim ke semua user', 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
-    $('broadcast-clear').addEventListener('click', () => {
+    $('broadcast-clear').addEventListener('click', async () => {
       if (!confirm('Hapus broadcast aktif?')) return;
-      localStorage.removeItem('calavera_broadcast');
-      $('broadcast-input').value = '';
-      renderBroadcast();
-      toast('Broadcast dihapus', 'success');
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'broadcast', value: null } });
+        $('broadcast-input').value = '';
+        await renderSettings();
+        toast('Broadcast dihapus', 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
   }
-
-  // ============================================================
-  // DIFFICULTY SETTINGS
-  // ============================================================
-  const DIFF_KEY = 'calavera_difficulty';
   const DIFF_LEVELS = ['easy', 'normal', 'hard', 'very-hard'];
-  function renderDiff() {
-    const cur = localStorage.getItem(DIFF_KEY) || 'normal';
-    document.querySelectorAll('.diff-btn').forEach((b) => {
-      b.classList.toggle('active', b.dataset.level === cur);
-    });
-    $('diff-current').textContent = cur.toUpperCase().replace('-', ' ');
-  }
   function bindDiff() {
     document.querySelectorAll('.diff-btn').forEach((b) => {
-      b.addEventListener('click', () => {
+      b.addEventListener('click', async () => {
         const lvl = b.dataset.level;
         if (!DIFF_LEVELS.includes(lvl)) return;
-        localStorage.setItem(DIFF_KEY, lvl);
-        renderDiff();
-        toast('Difficulty: ' + lvl.toUpperCase(), 'success');
+        try {
+          await api('/api/admin/settings', { method: 'PATCH', body: { key: 'difficulty', value: lvl } });
+          await renderSettings();
+          toast('Difficulty: ' + lvl.toUpperCase(), 'success');
+        } catch (e) { toast('Gagal: ' + e.message, 'error'); }
       });
     });
   }
-
-  // ============================================================
-  // RESET
-  // ============================================================
   function bindReset() {
-    $('reset-settings-btn').addEventListener('click', () => {
-      if (!confirm('Reset difficulty ke default (Normal)?\n\nUser data dan balance TIDAK diubah.')) return;
-      localStorage.removeItem('calavera_difficulty');
-      renderDiff();
-      toast('Difficulty di-reset ke Normal', 'success');
+    $('reset-settings-btn').addEventListener('click', async () => {
+      if (!confirm('Reset difficulty ke default (Normal)?')) return;
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'difficulty', value: 'normal' } });
+        await renderSettings();
+        toast('Difficulty di-reset', 'success');
+      } catch (e) { toast('Gagal: ' + e.message, 'error'); }
     });
-    $('reset-everything-btn').addEventListener('click', () => {
-      if (!confirm('Reset SEMUA data (user, balance, stats, difficulty, auto-spin)?\n\nTidak bisa di-undo!')) return;
+    $('reset-everything-btn').addEventListener('click', async () => {
+      if (!confirm('Reset SEMUA data (user, balance, stats, jackpot)?\n\nTidak bisa di-undo!')) return;
       if (!confirm('Konfirmasi sekali lagi — yakin hapus SEMUA?')) return;
-      Object.keys(localStorage).filter(k => k.startsWith('calavera_')).forEach((k) => localStorage.removeItem(k));
-      renderDiff();
-      refresh();
+      // Delete all users
+      const users = await getAllUsers();
+      for (const u of users) {
+        try { await api('/api/admin/users', { method: 'PATCH', body: { username: u.username, action: 'delete' } }); }
+        catch (_) {}
+      }
+      // Reset jackpot pools to seed
+      try { await api('/api/admin/jackpot', { method: 'POST', body: { action: 'reset' } }); } catch (_) {}
+      // Clear bigwins log
+      try { await api('/api/admin/bigwins', { method: 'DELETE' }); } catch (_) {}
+      // Reset settings to defaults
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'difficulty', value: 'normal' } });
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'maintenance', value: false } });
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'broadcast', value: null } });
+      } catch (_) {}
+      await refresh();
+      await renderJP();
+      await renderSettings();
       toast('Semua data di-reset', 'success');
     });
   }
