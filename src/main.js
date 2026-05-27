@@ -521,7 +521,7 @@ const Game = {
     const forceFS = (scatterCount) => {
       if (!this.app) { alert('Login dulu untuk trigger free spin.'); return; }
       if (FreeSpin.active || Reels.spinning) return;
-      const award = FreeSpin.start(scatterCount);
+      const award = FreeSpin.start(scatterCount, this.state.bet);
       // E3: switch music — fade out base game music, start dramatic FS music
       Audio.stopGameMusic?.(900);
       Audio.freeSpinTrigger?.();
@@ -727,7 +727,7 @@ const Game = {
     };
 
     if (scatterCount >= 3 && !FreeSpin.active) {
-      const award = FreeSpin.start(scatterCount);
+      const award = FreeSpin.start(scatterCount, this.state.bet);
       this.state.balance += multipliedWin;
       if (multipliedWin > 0) {
         this.state.stats.totalWin += multipliedWin;
@@ -1241,7 +1241,7 @@ const Game = {
     // Trigger free spin starting at given scatter count (3/4/5).
     const triggerBuyFS = (scatterCount) => {
       if (FreeSpin.active || Reels.spinning) return;
-      const award = FreeSpin.start(scatterCount);
+      const award = FreeSpin.start(scatterCount, this.state.bet);
       Audio.stopGameMusic?.(900);
       Audio.freeSpinTrigger();
       setTimeout(() => Audio.playFreeSpinMusic?.(), 1400);

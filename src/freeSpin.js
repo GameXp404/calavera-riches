@@ -10,14 +10,16 @@ export const FreeSpin = {
   remaining: 0,
   total: 0,
   totalWonInBonus: 0,
+  betAtStart: 0,
 
-  start(scatterCount) {
+  start(scatterCount, bet = 0) {
     const award = FREE_SPIN_AWARDS[Math.min(scatterCount, 5)];
     if (!award) return null;
     this.active = true;
     this.remaining = award.spins;
     this.total = award.spins;
     this.totalWonInBonus = 0;
+    this.betAtStart = bet;
     return award;
   },
 
@@ -28,6 +30,7 @@ export const FreeSpin = {
       const summary = {
         totalWon: this.totalWonInBonus,
         spinsPlayed: this.total,
+        bet: this.betAtStart,
       };
       this.active = false;
       this.remaining = 0;
@@ -271,9 +274,10 @@ export function showSummary(app, stage, summary, onComplete) {
     }
   };
   const titleMaxW = W * 0.92;
-  // Tier — use EPIC for moderate celebration, LEGENDARY if big totalWon (>100x bet typically)
+  // Tier scales with bet — LEGENDARY for ≥100× bet (mirrors WinCelebration), else EPIC.
   const totalWon = summary.totalWon || 0;
-  const tier = totalWon >= 5000 ? 'LEGENDARY' : 'EPIC';
+  const bet = summary.bet || 0;
+  const tier = (bet > 0 && totalWon >= bet * 100) ? 'LEGENDARY' : 'EPIC';
 
   // 1. Deep dark dim
   const dim = new PIXI.Graphics();
