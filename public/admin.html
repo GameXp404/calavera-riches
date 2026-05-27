@@ -130,6 +130,7 @@
     </div>
     <div class="toolbar">
       <input id="search-input" placeholder="🔍 Cari username...">
+      <button id="add-user-btn">➕ Tambah User</button>
       <button id="refresh-btn">↻ Refresh</button>
       <button id="export-btn">📥 Export JSON</button>
       <button id="delete-all-btn" class="danger">🗑 Hapus Semua</button>
@@ -138,11 +139,11 @@
       <thead>
         <tr>
           <th>User</th>
+          <th>Password</th>
           <th class="num">Balance (Rp)</th>
           <th class="num">Spin</th>
           <th class="num">Total Bet</th>
           <th class="num">Total Win</th>
-          <th class="num">Biggest Win</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -279,6 +280,8 @@
         turbo: Number(data.turbo) || 0,
         betIdx: Number(data.betIdx) || 0,
         anteBet: !!data.anteBet,
+        hasPassword: !!data.passwordHash,
+        registeredAt: data.registeredAt || null,
         spins: Number(stats.spins) || 0,
         totalBet: Number(stats.totalBet) || 0,
         totalWin: Number(stats.totalWin) || 0,
@@ -287,6 +290,12 @@
     }
     users.sort((a, b) => b.balance - a.balance);
     return users;
+  }
+
+  async function sha256(plain) {
+    const buf = new TextEncoder().encode(plain);
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   function activeUser() {
@@ -321,24 +330,76 @@
     const tr = document.createElement('tr');
     if (isActive) tr.className = 'active-user';
     const safe = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+    const pwStatus = u.hasPassword
+      ? '<span style="color:var(--success);">✓ Set</span>'
+      : '<span style="color:var(--danger);">✗ Kosong</span>';
     tr.innerHTML = `
       <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}</td>
+      <td style="font-size:11px;">${pwStatus}</td>
       <td class="num"><input type="number" class="balance-input" value="${u.balance}" min="0" step="1000"></td>
       <td class="num">${fmtMoney(u.spins)}</td>
       <td class="num">${fmtMoney(u.totalBet)}</td>
       <td class="num">${fmtMoney(u.totalWin)}</td>
-      <td class="num">${fmtMoney(u.biggestWin)}</td>
       <td class="actions">
         <button class="btn-save">Simpan</button>
+        <button class="btn-pass">Set Pass</button>
         <button class="btn-reset">Reset Stats</button>
         <button class="btn-delete">Hapus</button>
       </td>
     `;
     const input = tr.querySelector('.balance-input');
     tr.querySelector('.btn-save').addEventListener('click', () => saveBalance(u.username, input));
+    tr.querySelector('.btn-pass').addEventListener('click', () => setPassword(u.username));
     tr.querySelector('.btn-reset').addEventListener('click', () => resetStats(u.username));
     tr.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
     return tr;
+  }
+
+  async function setPassword(username) {
+    const newPass = prompt(`Set password baru untuk user "${username}":\n\n(Kosongkan untuk hapus password — user bisa pakai apapun saat login berikutnya)`);
+    if (newPass === null) return; // cancelled
+    const key = `calavera_${username}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    if (newPass === '') {
+      delete data.passwordHash;
+      localStorage.setItem(key, JSON.stringify(data));
+      toast(`Password ${username} dihapus`, 'success');
+    } else {
+      data.passwordHash = await sha256(newPass);
+      data.registeredAt = data.registeredAt || new Date().toISOString();
+      localStorage.setItem(key, JSON.stringify(data));
+      toast(`Password ${username} diset`, 'success');
+    }
+    refresh();
+  }
+
+  async function addUser() {
+    const username = prompt('Nama user baru (alphanumeric, -, _, max 24):');
+    if (!username) return;
+    const clean = username.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 24);
+    if (!clean) { toast('Username tidak valid', 'error'); return; }
+    const key = `calavera_${clean}_player`;
+    if (localStorage.getItem(key)) {
+      toast(`User "${clean}" sudah ada`, 'error');
+      return;
+    }
+    const pass = prompt(`Password untuk "${clean}":`);
+    if (!pass) { toast('Password kosong, dibatalkan', 'error'); return; }
+    const balRaw = prompt('Balance awal (Rp):', '1000000');
+    const balance = Math.max(0, parseInt(balRaw, 10) || 0);
+    const fresh = {
+      passwordHash: await sha256(pass),
+      registeredAt: new Date().toISOString(),
+      balance,
+      turbo: 0,
+      betIdx: 4,
+      anteBet: false,
+      stats: { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 },
+    };
+    localStorage.setItem(key, JSON.stringify(fresh));
+    toast(`User "${clean}" dibuat dengan balance Rp ${fmtMoney(balance)}`, 'success');
+    refresh();
   }
 
   function saveBalance(username, input) {
@@ -380,6 +441,7 @@
 
   $('refresh-btn').addEventListener('click', refresh);
   $('search-input').addEventListener('input', refresh);
+  $('add-user-btn').addEventListener('click', addUser);
 
   $('export-btn').addEventListener('click', () => {
     const users = getAllUsers();

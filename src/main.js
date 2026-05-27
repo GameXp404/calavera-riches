@@ -123,7 +123,11 @@ const Game = {
   savePlayerPrefs() {
     try {
       const key = `calavera_${this._getUser()}_player`;
+      // Preserve passwordHash + registeredAt (set at registration) — only update mutable game state.
+      let existing = {};
+      try { existing = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) {}
       localStorage.setItem(key, JSON.stringify({
+        ...existing,
         turbo: this.state.turbo,
         betIdx: this.state.betIdx,
         balance: this.state.balance,
@@ -1768,12 +1772,19 @@ function setSplashProgress(pct) {
 }
 // Expose for game's preload to update progress
 window.__setSplashProgress = setSplashProgress;
-function attemptLogin() {
+// SHA-256 hash via Web Crypto API. Returns hex string.
+async function hashPassword(plain) {
+  const buf = new TextEncoder().encode(plain);
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function attemptLogin() {
   const userEl = document.getElementById('login-user');
   const passEl = document.getElementById('login-pass');
   const errEl = document.getElementById('login-error');
   let user = userEl.value.trim();
-  // OPEN LOGIN: accept any non-empty username; password ignored entirely.
+  const pass = passEl.value;
   // Sanitize username: alphanumeric + dash/underscore only, max 24 chars.
   user = user.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 24);
   if (!user) {
@@ -1781,9 +1792,48 @@ function attemptLogin() {
     userEl.focus();
     return;
   }
+  if (!pass) {
+    errEl.textContent = 'Password tidak boleh kosong!';
+    passEl.focus();
+    return;
+  }
+  const playerKey = `calavera_${user}_player`;
+  const passHash = await hashPassword(pass);
+  let player = null;
+  try { player = JSON.parse(localStorage.getItem(playerKey) || 'null'); } catch (_) { player = null; }
+
+  if (player && player.passwordHash) {
+    // Existing account: verify password
+    if (player.passwordHash !== passHash) {
+      errEl.textContent = 'Password salah untuk user "' + user + '"!';
+      passEl.value = '';
+      passEl.focus();
+      return;
+    }
+    // Match → login OK
+  } else if (player && !player.passwordHash) {
+    // Legacy account (no hash yet): bind current password as canonical hash
+    player.passwordHash = passHash;
+    player.registeredAt = player.registeredAt || new Date().toISOString();
+    localStorage.setItem(playerKey, JSON.stringify(player));
+  } else {
+    // First-time registration: create new account with hash + defaults
+    const fresh = {
+      passwordHash: passHash,
+      registeredAt: new Date().toISOString(),
+      balance: GAME_CONFIG.STARTING_BALANCE,
+      turbo: 0,
+      betIdx: GAME_CONFIG.BET_LEVELS.indexOf(GAME_CONFIG.DEFAULT_BET),
+      anteBet: false,
+      stats: { spins: 0, totalBet: 0, totalWin: 0, biggestWin: 0 },
+    };
+    localStorage.setItem(playerKey, JSON.stringify(fresh));
+  }
+
   // Save active user — game state will key off this for per-user balance/settings
   localStorage.setItem(LOGIN_KEY, user);
   errEl.textContent = '';
+  passEl.value = '';
   hideLoginAndStart();
 }
 function setupLoginUI() {
