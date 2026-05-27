@@ -63,6 +63,12 @@
   .toast.success { background: var(--success); }
   .toast.error { background: var(--danger); }
   .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .pl-pos { color: var(--success); font-weight: 600; }
+  .pl-neg { color: var(--danger); font-weight: 600; }
+  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+  .tier-badge.tier-mega       { background: #c44d3b; color: white; }
+  .tier-badge.tier-epic       { background: #8a2be2; color: white; }
+  .tier-badge.tier-legendary  { background: linear-gradient(90deg, #ff8a00, #ffd700); color: #1a0a1f; }
   .section-title { margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); color: var(--accent); font-size: 18px; letter-spacing: 1px; }
   .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
   .setting-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
@@ -127,6 +133,8 @@
       <div class="stat-card"><div class="label">Total Balance</div><div class="val" id="stat-balance">0</div></div>
       <div class="stat-card"><div class="label">Total Spin</div><div class="val" id="stat-spins">0</div></div>
       <div class="stat-card"><div class="label">Total Bet</div><div class="val" id="stat-totalbet">0</div></div>
+      <div class="stat-card"><div class="label">Total Win</div><div class="val" id="stat-totalwin">0</div></div>
+      <div class="stat-card"><div class="label">RTP Aktual</div><div class="val" id="stat-rtp">—</div></div>
     </div>
     <div class="toolbar">
       <input id="search-input" placeholder="🔍 Cari username...">
@@ -139,16 +147,54 @@
       <thead>
         <tr>
           <th>User</th>
-          <th>Password</th>
+          <th>Pass</th>
           <th class="num">Balance (Rp)</th>
           <th class="num">Spin</th>
-          <th class="num">Total Bet</th>
-          <th class="num">Total Win</th>
+          <th class="num">Net P/L</th>
+          <th>Last Login</th>
           <th>Aksi</th>
         </tr>
       </thead>
       <tbody id="user-rows"></tbody>
     </table>
+
+    <h2 class="section-title">🌐 Global Controls</h2>
+    <div class="settings-grid">
+      <div class="setting-card">
+        <h3>🚧 Maintenance Mode</h3>
+        <div class="setting-row toggle-row">
+          <label>Block semua login</label>
+          <button id="maint-toggle" class="toggle-btn off">OFF</button>
+        </div>
+        <p class="hint">Saat ON, semua user (kecuali yang sudah login & belum refresh) tidak bisa login baru. Pesan: "Game sedang maintenance."</p>
+      </div>
+      <div class="setting-card">
+        <h3>📢 Broadcast Message</h3>
+        <textarea id="broadcast-input" placeholder="Ketik pengumuman untuk semua player..." style="width:100%;min-height:60px;padding:8px;background:#0d050f;color:var(--fg);border:1px solid var(--border);border-radius:4px;font-size:13px;resize:vertical;"></textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <button id="broadcast-send" class="full-btn" style="margin:0;">Kirim ke Semua</button>
+          <button id="broadcast-clear" class="small-btn">Hapus</button>
+        </div>
+        <p class="hint">Pesan tampil sebagai popup saat user login (sekali per user). Status: <strong id="broadcast-status">tidak ada</strong></p>
+      </div>
+    </div>
+
+    <h2 class="section-title">🏆 Leaderboard — Top Winners</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>User</th><th class="num">Biggest Win</th><th class="num">Total Win</th><th class="num">Net P/L</th></tr>
+      </thead>
+      <tbody id="leaderboard-rows"></tbody>
+    </table>
+
+    <h2 class="section-title">💎 Big Win History (50 terbaru)</h2>
+    <table>
+      <thead>
+        <tr><th>Waktu</th><th>User</th><th>Tier</th><th class="num">Amount</th><th class="num">× Bet</th></tr>
+      </thead>
+      <tbody id="bigwin-rows"></tbody>
+    </table>
+    <button id="clear-log-btn" class="small-btn" style="margin-top:8px;">🗑 Hapus log</button>
     <div id="empty-state" class="empty" style="display:none;">Belum ada user. Login ke game dulu untuk membuat data.</div>
     <h2 class="section-title">⚙️ Pengaturan Game</h2>
 
@@ -166,7 +212,7 @@
 
       <div class="setting-card danger-card">
         <h3>🚨 Reset</h3>
-        <button id="reset-settings-btn" class="full-btn">Reset Audio + Difficulty</button>
+        <button id="reset-settings-btn" class="full-btn">Reset Difficulty ke Normal</button>
         <button id="reset-everything-btn" class="full-btn danger">Reset SEMUA (user + settings)</button>
         <p class="hint">Reset audio/difficulty: aman, hanya hapus konfigurasi. Reset semua: hapus juga balance dan stats semua user.</p>
       </div>
@@ -218,11 +264,15 @@
     $('dashboard').style.display = 'block';
     refresh();
     $('hdr-now').textContent = new Date().toLocaleString('id-ID');
-    // Init settings UI (difficulty, reset)
+    // Init settings UI
     renderDiff();
+    renderMaintenance();
+    renderBroadcast();
     if (!showDashboard._bound) {
       bindDiff();
       bindReset();
+      bindMaintenance();
+      bindBroadcast();
       showDashboard._bound = true;
     }
   }
@@ -263,7 +313,11 @@
         betIdx: Number(data.betIdx) || 0,
         anteBet: !!data.anteBet,
         hasPassword: !!data.passwordHash,
+        frozen: !!data.frozen,
+        pendingBonus: data.pendingBonus?.amount || 0,
         registeredAt: data.registeredAt || null,
+        lastLogin: data.lastLogin || null,
+        lastSpin: data.lastSpin || null,
         spins: Number(stats.spins) || 0,
         totalBet: Number(stats.totalBet) || 0,
         totalWin: Number(stats.totalWin) || 0,
@@ -284,6 +338,18 @@
     return localStorage.getItem('calavera_user') || '';
   }
 
+  function fmtRelTime(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso).getTime();
+    if (!t) return '—';
+    const diff = Date.now() - t;
+    if (diff < 60_000) return 'baru saja';
+    if (diff < 3_600_000) return Math.floor(diff / 60_000) + ' menit lalu';
+    if (diff < 86_400_000) return Math.floor(diff / 3_600_000) + ' jam lalu';
+    if (diff < 7 * 86_400_000) return Math.floor(diff / 86_400_000) + ' hari lalu';
+    return new Date(iso).toLocaleDateString('id-ID');
+  }
+
   function refresh() {
     const users = getAllUsers();
     const active = activeUser();
@@ -299,13 +365,76 @@
       filtered.forEach((u) => tbody.appendChild(renderRow(u, u.username === active)));
     }
 
-    let totalBal = 0, totalSpin = 0, totalBet = 0;
-    users.forEach((u) => { totalBal += u.balance; totalSpin += u.spins; totalBet += u.totalBet; });
+    let totalBal = 0, totalSpin = 0, totalBet = 0, totalWin = 0;
+    users.forEach((u) => {
+      totalBal += u.balance;
+      totalSpin += u.spins;
+      totalBet += u.totalBet;
+      totalWin += u.totalWin;
+    });
     $('stat-users').textContent = users.length;
     $('stat-balance').textContent = fmtMoney(totalBal);
     $('stat-spins').textContent = fmtMoney(totalSpin);
     $('stat-totalbet').textContent = fmtMoney(totalBet);
+    $('stat-totalwin').textContent = fmtMoney(totalWin);
+    // Aggregate RTP: (totalWin / totalBet) * 100. Target ~96.5%.
+    if (totalBet > 0) {
+      const rtp = (totalWin / totalBet) * 100;
+      $('stat-rtp').textContent = rtp.toFixed(1) + '%';
+      $('stat-rtp').style.color = (rtp >= 90 && rtp <= 110) ? 'var(--accent)' : 'var(--danger)';
+    } else {
+      $('stat-rtp').textContent = '—';
+    }
     $('hdr-count').textContent = users.length + ' user';
+
+    renderLeaderboard(users);
+    renderBigWinLog();
+  }
+
+  function renderLeaderboard(users) {
+    const sorted = users.slice().sort((a, b) => b.biggestWin - a.biggestWin).slice(0, 10);
+    const tbody = $('leaderboard-rows');
+    tbody.innerHTML = '';
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty" style="padding:16px;">Belum ada data menang</td></tr>';
+      return;
+    }
+    sorted.forEach((u, i) => {
+      const net = u.totalWin - u.totalBet;
+      const netClass = net >= 0 ? 'pl-pos' : 'pl-neg';
+      const tr = document.createElement('tr');
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+      tr.innerHTML = `
+        <td>${medal}</td>
+        <td class="user-cell">${u.username}</td>
+        <td class="num">${fmtMoney(u.biggestWin)}</td>
+        <td class="num">${fmtMoney(u.totalWin)}</td>
+        <td class="num ${netClass}">${net >= 0 ? '+' : ''}${fmtMoney(net)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderBigWinLog() {
+    const log = (() => { try { return JSON.parse(localStorage.getItem('calavera_bigwin_log') || '[]'); } catch (_) { return []; } })();
+    const tbody = $('bigwin-rows');
+    tbody.innerHTML = '';
+    if (log.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty" style="padding:16px;">Belum ada big win tercatat</td></tr>';
+      return;
+    }
+    log.forEach((entry) => {
+      const tr = document.createElement('tr');
+      const tierClass = 'tier-' + entry.tier.toLowerCase();
+      tr.innerHTML = `
+        <td style="font-size:11px;color:var(--muted);">${fmtRelTime(entry.at)}</td>
+        <td class="user-cell">${entry.user}</td>
+        <td><span class="tier-badge ${tierClass}">${entry.tier}</span></td>
+        <td class="num">${fmtMoney(entry.amount)}</td>
+        <td class="num">${entry.mult}×</td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
   function renderRow(u, isActive) {
@@ -313,28 +442,64 @@
     if (isActive) tr.className = 'active-user';
     const safe = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
     const pwStatus = u.hasPassword
-      ? '<span style="color:var(--success);">✓ Set</span>'
-      : '<span style="color:var(--danger);">✗ Kosong</span>';
+      ? '<span style="color:var(--success);">✓</span>'
+      : '<span style="color:var(--danger);">✗</span>';
+    const net = u.totalWin - u.totalBet;
+    const netClass = net >= 0 ? 'pl-pos' : 'pl-neg';
+    const freezeStatus = u.frozen ? ' <span style="color:#7ec8ff;font-size:10px;">❄️</span>' : '';
+    const bonusStatus = u.pendingBonus > 0 ? ' <span style="color:var(--accent);font-size:10px;">🎁+' + fmtMoney(u.pendingBonus) + '</span>' : '';
     tr.innerHTML = `
-      <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}</td>
-      <td style="font-size:11px;">${pwStatus}</td>
+      <td class="user-cell">${safe(u.username)}${isActive ? ' <span style="color:var(--muted);font-size:10px;">●online</span>' : ''}${freezeStatus}${bonusStatus}</td>
+      <td style="font-size:13px;text-align:center;">${pwStatus}</td>
       <td class="num"><input type="number" class="balance-input" value="${u.balance}" min="0" step="1000"></td>
       <td class="num">${fmtMoney(u.spins)}</td>
-      <td class="num">${fmtMoney(u.totalBet)}</td>
-      <td class="num">${fmtMoney(u.totalWin)}</td>
+      <td class="num ${netClass}">${net >= 0 ? '+' : ''}${fmtMoney(net)}</td>
+      <td style="font-size:11px;color:var(--muted);">${fmtRelTime(u.lastLogin)}</td>
       <td class="actions">
-        <button class="btn-save">Simpan</button>
-        <button class="btn-pass">Set Pass</button>
-        <button class="btn-reset">Reset Stats</button>
-        <button class="btn-delete">Hapus</button>
+        <button class="btn-save">💾</button>
+        <button class="btn-pass">🔑</button>
+        <button class="btn-bonus" title="Send bonus">🎁</button>
+        <button class="btn-freeze" title="${u.frozen ? 'Unfreeze' : 'Freeze'}">${u.frozen ? '☀️' : '❄️'}</button>
+        <button class="btn-reset" title="Reset stats">🔄</button>
+        <button class="btn-delete" title="Hapus user">🗑</button>
       </td>
     `;
     const input = tr.querySelector('.balance-input');
     tr.querySelector('.btn-save').addEventListener('click', () => saveBalance(u.username, input));
     tr.querySelector('.btn-pass').addEventListener('click', () => setPassword(u.username));
+    tr.querySelector('.btn-bonus').addEventListener('click', () => sendBonus(u.username));
+    tr.querySelector('.btn-freeze').addEventListener('click', () => toggleFreeze(u.username, !u.frozen));
     tr.querySelector('.btn-reset').addEventListener('click', () => resetStats(u.username));
     tr.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
     return tr;
+  }
+
+  function sendBonus(username) {
+    const amtRaw = prompt(`Kirim bonus ke "${username}":\n\nMasukkan jumlah (Rp). Bonus akan ditambahkan saat user login berikutnya & user lihat notifikasi.`, '100000');
+    if (amtRaw === null) return;
+    const amt = parseInt(amtRaw, 10);
+    if (!Number.isFinite(amt) || amt <= 0) { toast('Jumlah tidak valid', 'error'); return; }
+    const key = `calavera_${username}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    const prevAmt = data.pendingBonus?.amount || 0;
+    data.pendingBonus = { amount: prevAmt + amt, queuedAt: new Date().toISOString() };
+    localStorage.setItem(key, JSON.stringify(data));
+    toast(`Bonus Rp ${fmtMoney(amt)} antri untuk ${username}`, 'success');
+    refresh();
+  }
+
+  function toggleFreeze(username, freeze) {
+    const action = freeze ? 'BEKUKAN' : 'UNFREEZE';
+    if (!confirm(`${action} user "${username}"?\n\n${freeze ? 'User tidak bisa login sampai di-unfreeze.' : 'User bisa login kembali.'}`)) return;
+    const key = `calavera_${username}_player`;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { data = {}; }
+    if (freeze) data.frozen = true;
+    else delete data.frozen;
+    localStorage.setItem(key, JSON.stringify(data));
+    toast(`${username} ${freeze ? 'dibekukan' : 'diaktifkan'}`, 'success');
+    refresh();
   }
 
   async function setPassword(username) {
@@ -424,6 +589,12 @@
   $('refresh-btn').addEventListener('click', refresh);
   $('search-input').addEventListener('input', refresh);
   $('add-user-btn').addEventListener('click', addUser);
+  $('clear-log-btn').addEventListener('click', () => {
+    if (!confirm('Hapus semua big win log?')) return;
+    localStorage.removeItem('calavera_bigwin_log');
+    renderBigWinLog();
+    toast('Log dihapus', 'success');
+  });
 
   $('export-btn').addEventListener('click', () => {
     const users = getAllUsers();
@@ -450,6 +621,62 @@
     toast(`${users.length} user dihapus`, 'success');
     refresh();
   });
+
+  // ============================================================
+  // MAINTENANCE + BROADCAST (global controls)
+  // ============================================================
+  function renderMaintenance() {
+    const on = localStorage.getItem('calavera_maintenance') === '1';
+    const t = $('maint-toggle');
+    t.textContent = on ? 'ON' : 'OFF';
+    t.className = 'toggle-btn ' + (on ? 'on' : 'off');
+  }
+  function bindMaintenance() {
+    $('maint-toggle').addEventListener('click', () => {
+      const on = localStorage.getItem('calavera_maintenance') === '1';
+      const next = !on;
+      if (next) {
+        if (!confirm('Aktifkan maintenance mode?\n\nSEMUA user tidak bisa login sampai dimatikan.')) return;
+      }
+      localStorage.setItem('calavera_maintenance', next ? '1' : '0');
+      renderMaintenance();
+      toast('Maintenance ' + (next ? 'ON' : 'OFF'), 'success');
+    });
+  }
+  function renderBroadcast() {
+    const b = (() => { try { return JSON.parse(localStorage.getItem('calavera_broadcast') || 'null'); } catch (_) { return null; } })();
+    const status = $('broadcast-status');
+    if (b && b.message) {
+      const dismissed = Object.keys(b.dismissedBy || {}).length;
+      status.textContent = `aktif (dibaca ${dismissed} user)`;
+      status.style.color = 'var(--accent)';
+      $('broadcast-input').value = b.message;
+    } else {
+      status.textContent = 'tidak ada';
+      status.style.color = 'var(--muted)';
+    }
+  }
+  function bindBroadcast() {
+    $('broadcast-send').addEventListener('click', () => {
+      const msg = $('broadcast-input').value.trim();
+      if (!msg) { toast('Pesan kosong', 'error'); return; }
+      if (msg.length > 500) { toast('Pesan terlalu panjang (max 500)', 'error'); return; }
+      localStorage.setItem('calavera_broadcast', JSON.stringify({
+        message: msg,
+        postedAt: new Date().toISOString(),
+        dismissedBy: {},
+      }));
+      renderBroadcast();
+      toast('Broadcast dikirim ke semua user', 'success');
+    });
+    $('broadcast-clear').addEventListener('click', () => {
+      if (!confirm('Hapus broadcast aktif?')) return;
+      localStorage.removeItem('calavera_broadcast');
+      $('broadcast-input').value = '';
+      renderBroadcast();
+      toast('Broadcast dihapus', 'success');
+    });
+  }
 
   // ============================================================
   // DIFFICULTY SETTINGS

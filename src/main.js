@@ -575,6 +575,13 @@ const Game = {
       this.state.balance -= eBet;
       this.state.stats.spins += 1;
       this.state.stats.totalBet += eBet;
+      // Stamp lastSpin timestamp on the player record (preserved by savePlayerPrefs spread).
+      try {
+        const key = `calavera_${this._getUser()}_player`;
+        const existing = JSON.parse(localStorage.getItem(key) || '{}');
+        existing.lastSpin = new Date().toISOString();
+        localStorage.setItem(key, JSON.stringify(existing));
+      } catch (_) {}
       this.savePlayerPrefs(); // persist new balance (bet deducted)
     }
     // Cancel any in-flight win counter animation from the previous spin before
@@ -785,6 +792,23 @@ const Game = {
       // via onUpdate — no need to roll twice (avoids flicker conflict).
       if (tier === 'NORMAL') {
         this.displayWin(multipliedWin, tier);
+      }
+      // Write Big Win log entry (admin-visible) for tier >= EPIC. Max 50 entries.
+      if (tier === 'EPIC' || tier === 'LEGENDARY' || tier === 'MEGA') {
+        try {
+          const LOG_KEY = 'calavera_bigwin_log';
+          let log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+          log.unshift({
+            user: this._getUser(),
+            tier,
+            amount: Math.round(multipliedWin),
+            bet: this.state.bet,
+            mult: Math.round((multipliedWin / this.state.bet) * 10) / 10,
+            at: new Date().toISOString(),
+          });
+          if (log.length > 50) log = log.slice(0, 50);
+          localStorage.setItem(LOG_KEY, JSON.stringify(log));
+        } catch (_) {}
       }
       // Win-tier audio: distinct cue per tier for premium feel
       if (tier === 'LEGENDARY')    Audio.winLegendary();
@@ -1783,6 +1807,13 @@ async function attemptLogin() {
   const userEl = document.getElementById('login-user');
   const passEl = document.getElementById('login-pass');
   const errEl = document.getElementById('login-error');
+
+  // Maintenance gate (admin can block all logins).
+  if (localStorage.getItem('calavera_maintenance') === '1') {
+    errEl.textContent = '🚧 Game sedang maintenance. Coba lagi nanti.';
+    return;
+  }
+
   let user = userEl.value.trim();
   const pass = passEl.value;
   // Sanitize username: alphanumeric + dash/underscore only, max 24 chars.
@@ -1810,6 +1841,11 @@ async function attemptLogin() {
       passEl.focus();
       return;
     }
+    // Frozen account (admin blocked) → reject
+    if (player.frozen) {
+      errEl.textContent = '❄️ Akun "' + user + '" dibekukan admin. Hubungi admin.';
+      return;
+    }
     // Match → login OK
   } else if (player && !player.passwordHash) {
     // Legacy account (no hash yet): bind current password as canonical hash
@@ -1830,10 +1866,43 @@ async function attemptLogin() {
     localStorage.setItem(playerKey, JSON.stringify(fresh));
   }
 
+  // Stamp lastLogin + apply pending admin bonus (if any).
+  let bonusAlert = null;
+  try {
+    const existing = JSON.parse(localStorage.getItem(playerKey) || '{}');
+    existing.lastLogin = new Date().toISOString();
+    if (existing.pendingBonus && typeof existing.pendingBonus.amount === 'number' && existing.pendingBonus.amount > 0) {
+      const amt = existing.pendingBonus.amount;
+      existing.balance = (Number(existing.balance) || 0) + amt;
+      delete existing.pendingBonus;
+      bonusAlert = amt;
+    }
+    localStorage.setItem(playerKey, JSON.stringify(existing));
+  } catch (_) {}
+
   // Save active user — game state will key off this for per-user balance/settings
   localStorage.setItem(LOGIN_KEY, user);
   errEl.textContent = '';
   passEl.value = '';
+
+  if (bonusAlert) {
+    alert('🎁 Kamu dapat bonus Rp ' + bonusAlert.toLocaleString('id-ID') + ' dari admin!');
+  }
+
+  // Broadcast check: show admin message once per user.
+  try {
+    const broadcast = JSON.parse(localStorage.getItem('calavera_broadcast') || 'null');
+    if (broadcast && broadcast.message) {
+      const dismissed = broadcast.dismissedBy || {};
+      if (!dismissed[user]) {
+        alert('📢 Pesan dari Admin:\n\n' + broadcast.message);
+        dismissed[user] = true;
+        broadcast.dismissedBy = dismissed;
+        localStorage.setItem('calavera_broadcast', JSON.stringify(broadcast));
+      }
+    }
+  } catch (_) {}
+
   hideLoginAndStart();
 }
 function setupLoginUI() {
