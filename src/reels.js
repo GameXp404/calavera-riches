@@ -509,7 +509,44 @@ export const Reels = {
     film.endFill();
     overlay.addChild(film);
 
-    // Layer 3: chunky multi-stack gold border for the WB-thick glow look
+    // Layer 3: vertical light STREAKS — WB signature 'cahaya panjang' that
+    // streaks down through the spinning reel. Multiple narrow gradients
+    // staggered so it feels like continuous falling light.
+    const streakLayer = new PIXI.Container();
+    streakLayer.x = 0; streakLayer.y = 0;
+    // Use mask so streaks don't leak outside the reel column.
+    const streakMask = new PIXI.Graphics();
+    streakMask.beginFill(0xffffff);
+    streakMask.drawRect(0, 0, reelW, reelH);
+    streakMask.endFill();
+    streakLayer.addChild(streakMask);
+    streakLayer.mask = streakMask;
+    const streaks = [];
+    const STREAK_COUNT = 4;
+    for (let i = 0; i < STREAK_COUNT; i++) {
+      const streak = new PIXI.Graphics();
+      // Narrow vertical light beam — bright gold to transparent ends.
+      // Drawn as a tall column with multiple fade stops via stacked rects.
+      const beamH = reelH * 0.55; // light tail length
+      const beamW = reelW * 0.42;
+      const segH = beamH / 8;
+      for (let s = 0; s < 8; s++) {
+        const t = s / 7; // 0 → 1 along beam
+        // Brightness peaks in middle, fades at top/bottom
+        const intensity = Math.sin(t * Math.PI) * 0.85;
+        streak.beginFill(0xfff5d6, intensity);
+        streak.drawRect(0, s * segH, beamW, segH + 1);
+        streak.endFill();
+      }
+      streak.x = (reelW - beamW) / 2;
+      streak.y = -beamH; // start above reel
+      streak.alpha = 0.85;
+      streakLayer.addChild(streak);
+      streaks.push(streak);
+    }
+    overlay.addChild(streakLayer);
+
+    // Layer 4: chunky multi-stack gold border for the WB-thick glow look
     const border = new PIXI.Graphics();
     border.lineStyle(12, 0xb91c1c, 0.65);  // outer crimson halo
     border.drawRoundedRect(-6, -6, reelW + 12, reelH + 12, 14);
@@ -550,9 +587,30 @@ export const Reels = {
       yoyo: true,
     });
 
+    // Light streaks: each beam falls top→bottom on a stagger so it looks like
+    // continuous downward 'cahaya panjang' through the spinning reel.
+    const streakTweens = [];
+    const streakCycle = 0.55; // each beam takes ~0.55s to traverse
+    streaks.forEach((s, i) => {
+      const delay = (i / streaks.length) * streakCycle;
+      // y travels from -beamH(=above) to reelH+beamH(=below) repeating.
+      // PIXI mask clips so only the part inside the reel renders.
+      const beamH = reelH * 0.55;
+      s.y = -beamH;
+      const t = gsap.to(s, {
+        y: reelH + beamH,
+        duration: streakCycle,
+        delay,
+        repeat: -1,
+        ease: 'none',
+      });
+      streakTweens.push(t);
+    });
+
     // Kill animations + cleanup exactly when the reel stops, after a short fade.
     setTimeout(() => {
       pulseTween.kill();
+      streakTweens.forEach(t => t.kill());
       gsap.to(overlay, {
         alpha: 0,
         duration: 0.25,
