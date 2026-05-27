@@ -934,11 +934,16 @@ export const Reels = {
         const extraDur = isAnticipation ? 1.6 + antiReelsSoFar * 0.7 : 0;
         const dur = baseDur + r * reelDelay + extraDur;
         if (isAnticipation) {
+          // SEQUENTIAL anticipation: wait for the previous reel to fully stop
+          // before starting this one. So reel 3 spins alone → stops → reel 4
+          // spins alone → stops → reel 5 spins alone → stops.
+          if (promises.length > 0) await promises[promises.length - 1];
           antiReelsSoFar++;
           Audio.anticipation();
           this.showAnticipationGlow(r, (dur + 0.3) * 1000);
+        } else {
+          await new Promise(rr => setTimeout(rr, r === 0 ? 0 : reelDelay * 1000));
         }
-        await new Promise(rr => setTimeout(rr, r === 0 ? 0 : reelDelay * 1000));
         promises.push(this.spinReel(r, dur, allSymbols[r], goldMask[r]));
       }
 
