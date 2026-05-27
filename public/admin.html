@@ -154,22 +154,6 @@
 
     <div class="settings-grid">
       <div class="setting-card">
-        <h3>🔊 Volume</h3>
-        <div class="setting-row">
-          <label>Master <span id="vol-master-val">100%</span></label>
-          <input type="range" id="vol-master" min="0" max="100" step="1" value="100">
-        </div>
-        <div class="setting-row">
-          <label>SFX <span id="vol-sfx-val">50%</span></label>
-          <input type="range" id="vol-sfx" min="0" max="100" step="1" value="50">
-        </div>
-        <div class="setting-row toggle-row">
-          <label>Sound</label>
-          <button id="vol-toggle" class="toggle-btn on">ON</button>
-        </div>
-      </div>
-
-      <div class="setting-card">
         <h3>🎯 Tingkat Kesulitan</h3>
         <div class="difficulty-grid">
           <button class="diff-btn" data-level="easy">🎃 EASY</button>
@@ -234,11 +218,9 @@
     $('dashboard').style.display = 'block';
     refresh();
     $('hdr-now').textContent = new Date().toLocaleString('id-ID');
-    // Init settings UI (audio, difficulty, reset)
-    renderAudio();
+    // Init settings UI (difficulty, reset)
     renderDiff();
     if (!showDashboard._bound) {
-      bindAudio();
       bindDiff();
       bindReset();
       showDashboard._bound = true;
@@ -470,52 +452,6 @@
   });
 
   // ============================================================
-  // AUDIO SETTINGS
-  // ============================================================
-  const AUDIO_KEY = 'calavera_audio';
-  function loadAudio() {
-    try { return JSON.parse(localStorage.getItem(AUDIO_KEY) || '{}'); } catch (_) { return {}; }
-  }
-  function saveAudio(patch) {
-    const cur = loadAudio();
-    const next = { master: 1.0, sfx: 0.5, enabled: true, ...cur, ...patch };
-    localStorage.setItem(AUDIO_KEY, JSON.stringify(next));
-    return next;
-  }
-  function renderAudio() {
-    const a = loadAudio();
-    const master = typeof a.master === 'number' ? a.master : 1.0;
-    const sfx = typeof a.sfx === 'number' ? a.sfx : 0.5;
-    const enabled = a.enabled !== false;
-    $('vol-master').value = Math.round(master * 100);
-    $('vol-master-val').textContent = Math.round(master * 100) + '%';
-    $('vol-sfx').value = Math.round(sfx * 100);
-    $('vol-sfx-val').textContent = Math.round(sfx * 100) + '%';
-    const t = $('vol-toggle');
-    t.textContent = enabled ? 'ON' : 'OFF';
-    t.className = 'toggle-btn ' + (enabled ? 'on' : 'off');
-  }
-  function bindAudio() {
-    $('vol-master').addEventListener('input', (e) => {
-      const v = parseInt(e.target.value, 10) / 100;
-      saveAudio({ master: v });
-      $('vol-master-val').textContent = e.target.value + '%';
-    });
-    $('vol-sfx').addEventListener('input', (e) => {
-      const v = parseInt(e.target.value, 10) / 100;
-      saveAudio({ sfx: v });
-      $('vol-sfx-val').textContent = e.target.value + '%';
-    });
-    $('vol-toggle').addEventListener('click', () => {
-      const cur = loadAudio();
-      const newEnabled = !(cur.enabled !== false);
-      saveAudio({ enabled: newEnabled });
-      renderAudio();
-      toast('Sound ' + (newEnabled ? 'ON' : 'OFF'), 'success');
-    });
-  }
-
-  // ============================================================
   // DIFFICULTY SETTINGS
   // ============================================================
   const DIFF_KEY = 'calavera_difficulty';
@@ -544,18 +480,15 @@
   // ============================================================
   function bindReset() {
     $('reset-settings-btn').addEventListener('click', () => {
-      if (!confirm('Reset audio + difficulty ke default?\n\nUser data dan balance TIDAK diubah.')) return;
-      localStorage.removeItem(AUDIO_KEY);
-      localStorage.removeItem(DIFF_KEY);
-      renderAudio();
+      if (!confirm('Reset difficulty ke default (Normal)?\n\nUser data dan balance TIDAK diubah.')) return;
+      localStorage.removeItem('calavera_difficulty');
       renderDiff();
-      toast('Audio + difficulty di-reset', 'success');
+      toast('Difficulty di-reset ke Normal', 'success');
     });
     $('reset-everything-btn').addEventListener('click', () => {
-      if (!confirm('Reset SEMUA data (user, balance, stats, audio, difficulty, auto-spin)?\n\nTidak bisa di-undo!')) return;
+      if (!confirm('Reset SEMUA data (user, balance, stats, difficulty, auto-spin)?\n\nTidak bisa di-undo!')) return;
       if (!confirm('Konfirmasi sekali lagi — yakin hapus SEMUA?')) return;
       Object.keys(localStorage).filter(k => k.startsWith('calavera_')).forEach((k) => localStorage.removeItem(k));
-      renderAudio();
       renderDiff();
       refresh();
       toast('Semua data di-reset', 'success');
