@@ -1,0 +1,151 @@
+/* GameGacor WebGL template — top-bar wrapping the Unity canvas. */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0a0a14;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+}
+
+#gg-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, #1a1a2e 0%, #232348 50%, #1a1a2e 100%);
+  border-bottom: 1px solid #2a2a4a;
+  height: 48px;
+  font-size: 14px;
+}
+
+#gg-back {
+  background: linear-gradient(180deg, #4a4a8a, #3a3a6a);
+  color: #fff;
+  border: 1px solid #6a6aaa;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+#gg-back:hover { background: linear-gradient(180deg, #5a5aaa, #4a4a8a); transform: translateY(-1px); }
+#gg-back:active { transform: translateY(0); }
+
+#gg-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255,215,0,0.4);
+}
+
+#gg-balance {
+  margin-left: auto;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #2a2a4a;
+  font-weight: 700;
+  color: #ffe082;
+  font-variant-numeric: tabular-nums;
+}
+
+#gg-user {
+  background: rgba(0,0,0,0.3);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #c0c0e0;
+}
+
+#unity-container {
+  position: relative;
+  width: 100vw;
+  height: calc(100vh - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#unity-canvas {
+  background: #000;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+#unity-container.unity-mobile #unity-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+#unity-loading-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  text-align: center;
+}
+
+#unity-logo {
+  width: 154px;
+  height: 130px;
+  margin: 0 auto 14px;
+  background: url('unity-logo-dark.png') no-repeat center;
+  background-size: contain;
+  opacity: 0.7;
+}
+
+#unity-progress-bar-empty {
+  width: 220px;
+  height: 18px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+#unity-progress-bar-full {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff8c00);
+  transition: width 0.15s ease-out;
+}
+
+#unity-warning {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  display: none;
+  background: #c62828;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  z-index: 100;
+  font-weight: 600;
+}
+
+#unity-footer {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+
+#unity-fullscreen-button {
+  width: 38px;
+  height: 38px;
+  background: rgba(0,0,0,0.5) url('fullscreen-button.png') no-repeat center;
+  background-size: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+#unity-fullscreen-button:hover { background-color: rgba(255,255,255,0.1); }
