@@ -943,6 +943,8 @@
       token = result.token;
       currentUser = result.user;
       localStorage.setItem(TOKEN_KEY, token);
+      // Mirror under 'calavera_token' too — Knight Kingdom's Unity bridge reads that legacy key.
+      localStorage.setItem('calavera_token', token);
       // Sync to game's login key so game auto-resumes without re-prompting login
       localStorage.setItem('calavera_user', currentUser.username);
       updateUI();

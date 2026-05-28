@@ -36,7 +36,12 @@
       var token = '';
       var user = '';
       try {
-        token = localStorage.getItem('calavera_token') || '';
+        // Lobby stores token under 'calavera_lobby_token' (the canonical key);
+        // mirror it to 'calavera_token' so the Unity bridge (which reads the legacy key) sees it too.
+        token = localStorage.getItem('calavera_lobby_token') || localStorage.getItem('calavera_token') || '';
+        if (token && !localStorage.getItem('calavera_token')) {
+          localStorage.setItem('calavera_token', token);
+        }
         user = localStorage.getItem('calavera_user') || '';
       } catch (e) {}
 
