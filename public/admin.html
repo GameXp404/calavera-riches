@@ -162,6 +162,11 @@
   .footer-note strong { color: var(--accent); }
   .small-btn { padding: 4px 8px; font-size: 11px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
   .small-btn:hover { color: var(--fg); border-color: var(--accent); }
+  .knight-diff-btn { padding: 12px 20px; font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.04); color: var(--fg); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  .knight-diff-btn:hover { border-color: var(--accent); }
+  .knight-diff-btn.active { background: var(--accent); color: #1a1a2e; border-color: var(--accent); }
+  .knight-diff-btn .hint { font-weight: 400; font-size: 11px; }
+  .knight-diff-btn.active .hint { color: #3a2a0e; }
   @media (max-width: 720px) {
     header { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
     header h1 { font-size: 16px; }
@@ -201,6 +206,7 @@
       <div class="sidebar-group">
         <div class="sidebar-title">PENGATURAN GAME</div>
         <div class="sidebar-link sub" data-view="game-calavera"><span class="icon">🎰</span><span>Calavera Riches</span></div>
+        <div class="sidebar-link sub" data-view="game-knight"><span class="icon">⚔️</span><span>Knight Kingdom</span></div>
       </div>
     </aside>
 
@@ -361,6 +367,39 @@
     </section>
     <!-- /VIEW: GAME CALAVERA -->
 
+    <!-- ============================================================
+         VIEW: GAME KNIGHT KINGDOM — difficulty (RTP) control
+         ============================================================ -->
+    <section id="view-game-knight" class="view">
+      <h2 class="view-title">⚔️ Knight Kingdom <span class="crumb">/ Game Settings</span></h2>
+
+      <h2 class="section-title">🎯 Difficulty / RTP Control</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:14px;">
+          Atur tingkat kesulitan (RTP) Knight Kingdom. Pengaturan ini berlaku untuk SEMUA pemain
+          dan diambil game saat dibuka. <strong>Easy</strong> = pemain sering menang (RTP tinggi),
+          <strong>Hard</strong> = jarang menang (RTP rendah). Player tidak bisa mengubah ini sendiri.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+          <button class="knight-diff-btn" data-diff="0">😊 EASY <span class="hint">(RTP tinggi)</span></button>
+          <button class="knight-diff-btn" data-diff="1">⚖️ MEDIUM <span class="hint">(balanced)</span></button>
+          <button class="knight-diff-btn" data-diff="2">🔥 HARD <span class="hint">(RTP rendah)</span></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="hint">Aktif sekarang:</span>
+          <strong id="knight-diff-current" style="color:var(--accent);">—</strong>
+          <button id="knight-diff-save" class="small-btn" style="background:var(--success);color:white;border:none;margin-left:auto;">💾 Simpan</button>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>Catatan:</strong> Perubahan difficulty berlaku saat pemain membuka/refresh game.
+        Karena logika slot berjalan di sisi klien (Unity WebGL), ini adalah <em>soft control</em> —
+        cukup untuk social casino, namun untuk anti-cheat penuh RTP harus dihitung server-side (Fase 2).
+      </div>
+    </section>
+    <!-- /VIEW: GAME KNIGHT -->
+
     </main>
   </div>
 </div>
@@ -411,11 +450,53 @@
       bindMaintenance();
       bindBroadcast();
       bindJP();
+      bindKnightDiff();
       showDashboard._bound = true;
     }
     await refresh();
     await renderSettings();
     await renderJP();
+    await renderKnightDiff();
+  }
+
+  // ============================================================
+  // KNIGHT KINGDOM — difficulty (RTP) control
+  // ============================================================
+  const KNIGHT_DIFF_LABELS = ['😊 EASY (RTP tinggi)', '⚖️ MEDIUM (balanced)', '🔥 HARD (RTP rendah)'];
+  let knightDiffSelected = 1;
+
+  function bindKnightDiff() {
+    document.querySelectorAll('.knight-diff-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        knightDiffSelected = parseInt(btn.dataset.diff, 10);
+        document.querySelectorAll('.knight-diff-btn').forEach((b) =>
+          b.classList.toggle('active', parseInt(b.dataset.diff, 10) === knightDiffSelected));
+      });
+    });
+    const saveBtn = $('knight-diff-save');
+    if (saveBtn) saveBtn.addEventListener('click', async () => {
+      try {
+        await api('/api/admin/settings', { method: 'PATCH', body: { key: 'knight_difficulty', value: knightDiffSelected } });
+        $('knight-diff-current').textContent = KNIGHT_DIFF_LABELS[knightDiffSelected];
+        toast('Difficulty Knight Kingdom disimpan: ' + KNIGHT_DIFF_LABELS[knightDiffSelected]);
+      } catch (e) {
+        toast('Gagal simpan: ' + e.message, 'error');
+      }
+    });
+  }
+
+  async function renderKnightDiff() {
+    try {
+      const settings = await api('/api/admin/settings');
+      let diff = settings.knight_difficulty;
+      diff = (typeof diff === 'number') ? diff : (diff != null ? parseInt(diff, 10) : 1);
+      if (Number.isNaN(diff) || diff < 0 || diff > 2) diff = 1;
+      knightDiffSelected = diff;
+      document.querySelectorAll('.knight-diff-btn').forEach((b) =>
+        b.classList.toggle('active', parseInt(b.dataset.diff, 10) === diff));
+      const cur = $('knight-diff-current');
+      if (cur) cur.textContent = KNIGHT_DIFF_LABELS[diff];
+    } catch (e) { /* settings may not exist yet — default Medium stays */ }
   }
 
   async function tryLogin() {
