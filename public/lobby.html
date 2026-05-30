@@ -644,12 +644,10 @@
     <div class="top-info">
       <span id="top-time">—</span>
       <span class="lang-flag">INDONESIA · BHS INDONESIA</span>
-      <span id="gg-online" title="Pemain sedang bermain">
-        <span class="gg-online-dot"></span>
-        <span id="gg-online-num">0</span>&nbsp;bermain
-      </span>
     </div>
     <div class="top-actions">
+      <span id="gg-online" title="Sedang menonton & bermain"><span class="gg-eye">👁️</span><span id="gg-online-num">0</span></span>
+      <button id="hdr-download" class="hdr-download" title="Download App">⬇️&nbsp;APP</button>
       <!-- Guest mode (default) -->
       <div id="guest-actions" style="display: flex; gap: 8px; align-items: center;">
         <button class="btn-login-top" id="btn-show-login">LOGIN</button>
@@ -721,8 +719,8 @@
     </button>
   </nav>
 
-  <!-- DAILY BONUS HERO -->
-  <div class="hero">
+  <!-- DAILY BONUS HERO (hidden per operator request) -->
+  <div class="hero" style="display:none;">
     <div class="hero-icon">🎁</div>
     <div class="hero-content">
       <div class="hero-title">DAILY BONUS HARIAN</div>
@@ -778,19 +776,7 @@
   </div>
 </div>
 
-<!-- FLOATING WIDGETS (KOKO303-style) -->
-<button class="float-widget telegram right" id="float-telegram" title="Telegram Support">
-  <span class="icon">📨</span>
-  <span>TELEGRAM</span>
-</button>
-<button class="float-widget support left" id="float-support" title="Live Chat">
-  <span class="icon">💬</span>
-  <span>LIVE CHAT</span>
-</button>
-<button class="float-widget download" id="float-download" title="Download App">
-  <span class="icon">📱</span>
-  <span>DOWNLOAD</span>
-</button>
+<!-- Floating widgets (Telegram/Live Chat/Download) removed per operator request. Download moved to header. -->
 
 <!-- SHOP MODAL -->
 <div class="modal-overlay" id="shop-modal">
@@ -1064,7 +1050,7 @@
   // Floating widgets
   $('float-telegram')?.addEventListener('click', () => toast('Telegram support: belum aktif (placeholder)'));
   $('float-support')?.addEventListener('click', () => toast('Live chat: belum aktif (placeholder)'));
-  $('float-download')?.addEventListener('click', () => toast('Download APK: belum tersedia (perlu wrapper PWA/Capacitor)'));
+  $('hdr-download')?.addEventListener('click', () => toast('Download APK: belum tersedia (perlu wrapper PWA/Capacitor)'));
 
   // Top bar clock
   function updateClock() {
@@ -1149,8 +1135,11 @@
 
 <!-- ============ LIVE PLAYER COUNT + WIN FEED (self-contained) ============ -->
 <style>
-  #gg-online{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#36d96b;letter-spacing:.3px;}
-  .gg-online-dot{width:8px;height:8px;border-radius:50%;background:#36d96b;box-shadow:0 0 8px #36d96b;animation:ggpulse 1.5s infinite;}
+  #gg-online{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:#fff;background:rgba(255,45,45,.16);border:1px solid rgba(255,80,80,.5);border-radius:20px;padding:3px 11px;}
+  #gg-online .gg-eye{font-size:14px;animation:ggblink 3.2s infinite;}
+  @keyframes ggblink{0%,92%,100%{opacity:1}95%{opacity:.25}}
+  .hdr-download{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;color:#06210f;background:linear-gradient(180deg,#5be07a,#27b052);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;}
+  .hdr-download:active{transform:scale(.95);}
   @keyframes ggpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
   #gg-winfeed{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#1c1330,#241640);border-top:1px solid #392a5e;border-bottom:1px solid #392a5e;padding:7px 12px;overflow:hidden;}
   .gg-winfeed-label{flex:0 0 auto;font-size:11px;font-weight:900;color:#ffd24a;background:#3a2a10;border:1px solid #6b521c;border-radius:6px;padding:3px 8px;letter-spacing:.5px;}
@@ -1233,13 +1222,13 @@
     }, 3400 + Math.floor(Math.random()*1600));
   }
   function applyGamePlayers(cfg){
-    var enabled = cfg.gamePlayersEnabled !== false;   // default on
     var gp = cfg.gamePlayers || {};
     Object.keys(GAME_BASES).forEach(function(id){
       var el = document.getElementById('gp-' + id);
       if (!el) return;
-      if (!enabled){ el.style.display = 'none'; return; }
-      animateGame(id, (gp[id] || 0), GAME_BASES[id]);
+      var g = gp[id] || {};
+      if (g.enabled === false){ el.style.display = 'none'; return; }
+      animateGame(id, (g.count || 0), GAME_BASES[id]);
     });
   }
 

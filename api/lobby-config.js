@@ -13,11 +13,10 @@ export default async function handler(req, res) {
 
   const GAME_IDS = ['calavera', 'knight'];   // games shown in the lobby
 
-  const { data } = await supabase
-    .from('settings')
-    .select('key,value')
-    .in('key', ['online_enabled', 'online_manual', 'winfeed_enabled', 'gameplayers_enabled',
-      ...GAME_IDS.map((g) => `players_${g}`)]);
+  const keys = ['online_enabled', 'online_manual', 'winfeed_enabled'];
+  GAME_IDS.forEach((g) => { keys.push(`players_${g}`, `players_${g}_enabled`); });
+
+  const { data } = await supabase.from('settings').select('key,value').in('key', keys);
 
   const s = {};
   (data || []).forEach((r) => { s[r.key] = r.value; });
@@ -27,11 +26,13 @@ export default async function handler(req, res) {
 
   const onlineEnabled = truthy(s.online_enabled, true);
   const winfeedEnabled = truthy(s.winfeed_enabled, true);
-  const gamePlayersEnabled = truthy(s.gameplayers_enabled, true);
   const onlineManual = toInt(s.online_manual);
 
+  // Per-game: each game has its own on/off + manual count (0 = auto-animated)
   const gamePlayers = {};
-  GAME_IDS.forEach((g) => { gamePlayers[g] = toInt(s[`players_${g}`]); });   // 0 = auto-animated
+  GAME_IDS.forEach((g) => {
+    gamePlayers[g] = { enabled: truthy(s[`players_${g}_enabled`], true), count: toInt(s[`players_${g}`]) };
+  });
 
-  return jsonOk(res, { onlineEnabled, onlineManual, winfeedEnabled, gamePlayersEnabled, gamePlayers });
+  return jsonOk(res, { onlineEnabled, onlineManual, winfeedEnabled, gamePlayers });
 }

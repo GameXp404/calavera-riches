@@ -244,20 +244,8 @@
           <input type="checkbox" id="cfg-winfeed-enabled"> Tampilkan Win Feed
         </label>
       </div>
-      <div style="border-top:1px solid #2a2740;margin-top:12px;padding-top:12px;">
-        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;margin-bottom:9px;">
-          <input type="checkbox" id="cfg-gameplayers-enabled"> 👤 Tampilkan jumlah pemain per game (di tiap kotak game)
-        </label>
-        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
-          <label style="display:flex;align-items:center;gap:7px;font-size:13px;">🎰 Calavera Riches:
-            <input type="number" id="cfg-players-calavera" min="0" placeholder="0" style="width:100px;padding:5px 8px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
-          <label style="display:flex;align-items:center;gap:7px;font-size:13px;">⚔️ Knight Kingdom:
-            <input type="number" id="cfg-players-knight" min="0" placeholder="0" style="width:100px;padding:5px 8px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
-          <span style="color:var(--muted);font-size:11px;">(0 = otomatis per game)</span>
-        </div>
-      </div>
       <div style="margin-top:12px;">
-        <button id="cfg-save-btn" style="padding:7px 18px;border-radius:7px;border:0;background:var(--accent,#36d96b);color:#06210f;font-weight:800;cursor:pointer;">💾 Simpan Semua</button>
+        <button id="cfg-save-btn" style="padding:7px 18px;border-radius:7px;border:0;background:var(--accent,#36d96b);color:#06210f;font-weight:800;cursor:pointer;">💾 Simpan</button>
       </div>
     </div>
 
@@ -395,6 +383,20 @@
       </div>
     </div>
 
+    <h2 class="section-title">👤 Jumlah Pemain (Tampilan Lobby)</h2>
+    <div class="setting-card" style="margin-bottom:16px;">
+      <p class="hint" style="margin-bottom:12px;">Angka pemain yang tampil di kotak Calavera Riches di lobby (badge 👤 di pojok kotak).</p>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="calavera-players-enabled"> Tampilkan badge jumlah pemain
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;">Jumlah manual:
+          <input type="number" id="calavera-players" min="0" placeholder="0" style="width:120px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+        <span class="hint">(0 = animasi otomatis)</span>
+        <button id="calavera-players-save" class="small-btn" style="background:var(--success);color:white;border:none;margin-left:auto;">💾 Simpan</button>
+      </div>
+    </div>
+
     <div class="footer-note">
       <strong>Catatan:</strong> Data tersimpan di <em>cloud Supabase</em>. Admin di device manapun melihat data yang sama (sumber kebenaran tunggal).
     </div>
@@ -424,6 +426,20 @@
           <span class="hint">Aktif sekarang:</span>
           <strong id="knight-diff-current" style="color:var(--accent);">—</strong>
           <button id="knight-diff-save" class="small-btn" style="background:var(--success);color:white;border:none;margin-left:auto;">💾 Simpan</button>
+        </div>
+      </div>
+
+      <h2 class="section-title">👤 Jumlah Pemain (Tampilan Lobby)</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:12px;">Angka pemain yang tampil di kotak Knight Kingdom di lobby (badge 👤 di pojok kotak).</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+            <input type="checkbox" id="knight-players-enabled"> Tampilkan badge jumlah pemain
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;">Jumlah manual:
+            <input type="number" id="knight-players" min="0" placeholder="0" style="width:120px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <span class="hint">(0 = animasi otomatis)</span>
+          <button id="knight-players-save" class="small-btn" style="background:var(--success);color:white;border:none;margin-left:auto;">💾 Simpan</button>
         </div>
       </div>
 
@@ -663,6 +679,7 @@
     renderLeaderboard(users);
     await renderBigWinLog();
     loadLiveConfig();
+    loadGamePlayers();
   }
 
   function renderLeaderboard(users) {
@@ -1127,29 +1144,44 @@
       const s = await api('/api/admin/settings');
       $('cfg-online-enabled').checked = !(s.online_enabled === false || s.online_enabled === 'false');
       $('cfg-winfeed-enabled').checked = !(s.winfeed_enabled === false || s.winfeed_enabled === 'false');
-      $('cfg-gameplayers-enabled').checked = !(s.gameplayers_enabled === false || s.gameplayers_enabled === 'false');
       const m = parseInt(s.online_manual, 10);
       $('cfg-online-manual').value = (!Number.isNaN(m) && m > 0) ? m : '';
-      const pc = parseInt(s.players_calavera, 10); $('cfg-players-calavera').value = (!Number.isNaN(pc) && pc > 0) ? pc : '';
-      const pk = parseInt(s.players_knight, 10);   $('cfg-players-knight').value   = (!Number.isNaN(pk) && pk > 0) ? pk : '';
     } catch (e) { /* keep current checkbox state */ }
   }
   async function saveLiveConfig(){
     try {
       const manual = Math.max(0, parseInt($('cfg-online-manual').value, 10) || 0);
-      const pCal = Math.max(0, parseInt($('cfg-players-calavera').value, 10) || 0);
-      const pKni = Math.max(0, parseInt($('cfg-players-knight').value, 10) || 0);
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_enabled',      value: $('cfg-online-enabled').checked } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'winfeed_enabled',      value: $('cfg-winfeed-enabled').checked } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_manual',        value: manual } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'gameplayers_enabled',  value: $('cfg-gameplayers-enabled').checked } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_calavera',     value: pCal } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_knight',       value: pKni } });
-      toast('Pengaturan tampilan live tersimpan ✓ (refresh lobby/game untuk lihat)');
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_enabled', value: $('cfg-online-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'winfeed_enabled', value: $('cfg-winfeed-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_manual',   value: manual } });
+      toast('Pengaturan lobby tersimpan ✓ (refresh lobby untuk lihat)');
     } catch (e) { toast('Gagal simpan: ' + e.message, 'error'); }
   }
   const _cfgBtn = document.getElementById('cfg-save-btn');
   if (_cfgBtn) _cfgBtn.addEventListener('click', saveLiveConfig);
+
+  // ---------- per-game player count (each game's own settings view) ----------
+  async function loadGamePlayers(){
+    try {
+      const s = await api('/api/admin/settings');
+      ['knight','calavera'].forEach((g) => {
+        const en = $(g+'-players-enabled'), num = $(g+'-players');
+        if (en) en.checked = !(s['players_'+g+'_enabled'] === false || s['players_'+g+'_enabled'] === 'false');
+        if (num) { const v = parseInt(s['players_'+g], 10); num.value = (!Number.isNaN(v) && v > 0) ? v : ''; }
+      });
+    } catch (e) {}
+  }
+  async function saveGamePlayers(g){
+    try {
+      const enabled = $(g+'-players-enabled').checked;
+      const manual = Math.max(0, parseInt($(g+'-players').value, 10) || 0);
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_'+g+'_enabled', value: enabled } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_'+g, value: manual } });
+      toast('Jumlah pemain '+g+' tersimpan ✓ (refresh lobby untuk lihat)');
+    } catch (e) { toast('Gagal simpan: ' + e.message, 'error'); }
+  }
+  $('knight-players-save')?.addEventListener('click', () => saveGamePlayers('knight'));
+  $('calavera-players-save')?.addEventListener('click', () => saveGamePlayers('calavera'));
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();
