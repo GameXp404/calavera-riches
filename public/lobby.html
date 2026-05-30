@@ -315,6 +315,11 @@
     border-color: rgba(255, 255, 255, 0.2);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
   }
+  /* When operator disables hover in admin */
+  body.no-hover .cat-item:hover, body.no-hover .profile-mini:hover,
+  body.no-hover .balance-chip:hover, body.no-hover .game-tile:hover {
+    transform: none; box-shadow: none;
+  }
 
   /* ============= HERO BANNER (Daily Bonus rotator) ============= */
   .hero {
@@ -661,7 +666,7 @@
   <header class="top-bar">
     <div class="brand">
       <div class="logo-dot"></div>
-      <span>GAMEGACOR</span>
+      <span id="brand-name">GAMEGACOR</span>
       <span id="gg-online" title="Sedang online & bermain"><span class="gg-dot2"></span><span id="gg-online-num">0</span></span>
       <span id="top-time" class="brand-time">—</span>
     </div>
@@ -1248,6 +1253,44 @@
     applyGamePlayers(cfg);
   }
   fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(apply).catch(function(){ apply({}); });
+
+  // ===== Operator-editable appearance (admin → 🎨 Tampilan Lobby) =====
+  function applyTheme(t){
+    if (!t || typeof t !== 'object') return;
+    var bn = document.getElementById('brand-name'); if (bn && t.brandName) bn.textContent = t.brandName;
+    var c = t.colors || {};
+    var css = '';
+    if (c.gold) css += ':root{--gold:' + c.gold + ';--gold-dark:' + c.gold + ';}';
+    if (c.green) css += ':root{--green:' + c.green + ';} #gg-online .gg-dot2,.tile-players .gp-dot{background:' + c.green + ';box-shadow:0 0 6px ' + c.green + ';} #gg-online #gg-online-num{color:' + c.green + ';}';
+    if (c.bg) css += '#app,body{background:' + c.bg + ';}';
+    var st = document.getElementById('theme-style');
+    if (!st){ st = document.createElement('style'); st.id = 'theme-style'; document.head.appendChild(st); }
+    st.textContent = css;
+    document.body.classList.toggle('no-hover', !!(t.toggles && t.toggles.hover === false));
+    (t.menu || []).forEach(function(m){
+      var btn = document.querySelector('.cat-item[data-cat="' + m.key + '"]');
+      if (!btn) return;
+      btn.style.display = (m.show === false) ? 'none' : '';
+      var lbl = btn.querySelector('span:not(.cat-badge)');
+      if (lbl && m.label) lbl.textContent = m.label;
+    });
+    var g = t.games || {};
+    [['calavera', 'game-calavera'], ['knight', 'game-knight']].forEach(function(row){
+      var cfg = g[row[0]]; if (!cfg) return;
+      var tile = document.getElementById(row[1]); if (!tile) return;
+      var img = tile.querySelector('.tile-img'); if (img && cfg.img) img.style.backgroundImage = "url('" + cfg.img + "')";
+      var nm = tile.querySelector('.tile-name'); if (nm && cfg.name) nm.textContent = cfg.name;
+      var mt = tile.querySelector('.tile-meta'); if (mt && cfg.meta) mt.textContent = cfg.meta;
+      var badge = tile.querySelector('.tile-badge');
+      if (cfg.badgeShow && cfg.badgeText){
+        if (!badge){ badge = document.createElement('div'); badge.className = 'tile-badge'; tile.appendChild(badge); }
+        badge.textContent = cfg.badgeText;
+        badge.style.display = '';
+        if (cfg.badgeColor) badge.style.background = cfg.badgeColor;
+      } else if (badge){ badge.style.display = 'none'; }
+    });
+  }
+  fetch('/api/theme').then(function(r){ return r.json(); }).then(applyTheme).catch(function(){});
 })();
 </script>
 </body>

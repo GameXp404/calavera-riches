@@ -212,6 +212,7 @@
       <div class="sidebar-group">
         <div class="sidebar-title">PENGATURAN UTAMA</div>
         <div class="sidebar-link active" data-view="lobby"><span class="icon">🏛️</span><span>Pengaturan Lobby</span></div>
+        <div class="sidebar-link" data-view="theme"><span class="icon">🎨</span><span>Tampilan Lobby</span></div>
       </div>
       <div class="sidebar-group">
         <div class="sidebar-title">PENGATURAN GAME</div>
@@ -460,6 +461,62 @@
       </div>
     </section>
     <!-- /VIEW: GAME KNIGHT -->
+
+    <!-- ============================================================
+         VIEW: TAMPILAN LOBBY — appearance editor (text, colors, toggles, games)
+         ============================================================ -->
+    <section id="view-theme" class="view">
+      <h2 class="view-title">🎨 Tampilan Lobby <span class="crumb">/ Appearance</span></h2>
+
+      <h2 class="section-title">📝 Teks &amp; Brand</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;max-width:340px;">Nama Brand (kiri atas)
+          <input type="text" id="th-brand" placeholder="GAMEGACOR" style="padding:7px 10px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">
+        </label>
+      </div>
+
+      <h2 class="section-title">🎨 Warna Tema</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:24px;">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">Warna Utama (emas/aksen)
+            <input type="color" id="th-gold" value="#ffd24d" style="width:64px;height:38px;border:none;background:none;cursor:pointer;"></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">Warna Online (hijau)
+            <input type="color" id="th-green" value="#36d96b" style="width:64px;height:38px;border:none;background:none;cursor:pointer;"></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">Background Lobby
+            <input type="color" id="th-bg" value="#1a2438" style="width:64px;height:38px;border:none;background:none;cursor:pointer;"></label>
+        </div>
+      </div>
+
+      <h2 class="section-title">👁️ Tampilkan / Sembunyikan</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="th-hover"> Efek gerak (lift) saat cursor hover
+        </label>
+        <p class="hint" style="margin-top:8px;">On/off <strong>win feed</strong> &amp; <strong>counter online</strong> ada di menu <strong>Pengaturan Lobby</strong>.</p>
+      </div>
+
+      <h2 class="section-title">📋 Menu Kategori</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:12px;">Centang = tampil di lobby. Teks bisa diganti bebas.</p>
+        <div id="th-menu-rows" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <h2 class="section-title">🎮 Game (Gambar, Nama, Badge)</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:12px;">Gambar: tempel URL (mis. <em>/assets/img/CalaveraRiches.png</em> atau link gambar online).</p>
+        <div id="th-games" style="display:flex;flex-direction:column;gap:18px;"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button id="th-save" class="small-btn" style="background:var(--success);color:white;border:none;">💾 Simpan Tampilan</button>
+        <span id="th-status" class="hint"></span>
+      </div>
+
+      <div class="footer-note" style="margin-top:16px;">
+        <strong>Catatan:</strong> Perubahan langsung kelihatan di lobby setelah pemain refresh. Disimpan di cloud (Supabase), berlaku untuk semua pemain.
+      </div>
+    </section>
+    <!-- /VIEW: TAMPILAN -->
 
     </main>
   </div>
@@ -1194,6 +1251,98 @@
   }
   $('knight-players-save')?.addEventListener('click', () => saveGamePlayers('knight'));
   $('calavera-players-save')?.addEventListener('click', () => saveGamePlayers('calavera'));
+
+  // ============================================================
+  // TAMPILAN LOBBY (appearance) editor — saves one jsonb blob `lobby_theme`
+  // ============================================================
+  const THEME_DEFAULT_MENU = [
+    { key:'slots', label:'SLOTS', show:true }, { key:'live', label:'LIVE GAMES', show:true },
+    { key:'sports', label:'SPORTS', show:true }, { key:'casino', label:'CASINO', show:true },
+    { key:'lotre', label:'LOTRE', show:true }, { key:'arcade', label:'E-GAMES', show:true },
+    { key:'fish', label:'TEMBAK IKAN', show:true }, { key:'promo', label:'PROMOSI', show:true },
+    { key:'refer', label:'REFERRAL', show:true }, { key:'rtp', label:'RTP LIVE', show:true },
+  ];
+  const THEME_GAMES = [
+    { id:'calavera', title:'🎰 Calavera Riches' },
+    { id:'knight', title:'⚔️ Knight Kingdom' },
+  ];
+  const _thInp = (extra) => 'padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;' + (extra||'');
+  const _esc = (s) => String(s||'').replace(/"/g, '&quot;');
+
+  function renderThemeMenuRows(menu){
+    const wrap = $('th-menu-rows'); if (!wrap) return;
+    wrap.innerHTML = '';
+    menu.forEach((m, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;';
+      row.innerHTML = '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;min-width:74px;font-size:13px;">'
+        + '<input type="checkbox" class="th-menu-show" data-i="'+i+'" '+(m.show===false?'':'checked')+'> tampil</label>'
+        + '<input type="text" class="th-menu-label" data-i="'+i+'" data-key="'+m.key+'" value="'+_esc(m.label)+'" style="'+_thInp('flex:1;max-width:240px;')+'">';
+      wrap.appendChild(row);
+    });
+  }
+  function renderThemeGames(games){
+    const wrap = $('th-games'); if (!wrap) return;
+    wrap.innerHTML = '';
+    THEME_GAMES.forEach((g) => {
+      const c = games[g.id] || {};
+      const box = document.createElement('div');
+      box.style.cssText = 'border:1px solid #2a2545;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;';
+      box.innerHTML = '<strong style="font-size:13px;">'+g.title+'</strong>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">Nama<input type="text" id="thg-'+g.id+'-name" value="'+_esc(c.name)+'" style="'+_thInp('')+'"></label>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">Subtitle<input type="text" id="thg-'+g.id+'-meta" value="'+_esc(c.meta)+'" style="'+_thInp('')+'"></label>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">Gambar (URL)<input type="text" id="thg-'+g.id+'-img" value="'+_esc(c.img)+'" style="'+_thInp('')+'"></label>'
+        + '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
+        + '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="thg-'+g.id+'-badgeshow" '+(c.badgeShow?'checked':'')+'> tampilkan badge</label>'
+        + '<input type="text" id="thg-'+g.id+'-badgetext" value="'+_esc(c.badgeText)+'" placeholder="HOT" style="'+_thInp('width:110px;')+'">'
+        + '<label style="font-size:12px;display:flex;align-items:center;gap:6px;">warna<input type="color" id="thg-'+g.id+'-badgecolor" value="'+(c.badgeColor||'#ff6a55')+'" style="width:42px;height:30px;border:none;background:none;cursor:pointer;"></label>'
+        + '</div>';
+      wrap.appendChild(box);
+    });
+  }
+  async function loadTheme(){
+    try {
+      const t = await (await fetch('/api/theme')).json();
+      $('th-brand').value = t.brandName || '';
+      $('th-gold').value = (t.colors && t.colors.gold) || '#ffd24d';
+      $('th-green').value = (t.colors && t.colors.green) || '#36d96b';
+      $('th-bg').value = (t.colors && t.colors.bg) || '#1a2438';
+      $('th-hover').checked = !(t.toggles && t.toggles.hover === false);
+      renderThemeMenuRows((t.menu && t.menu.length) ? t.menu : THEME_DEFAULT_MENU.slice());
+      renderThemeGames(t.games || {});
+    } catch (e) {}
+  }
+  async function saveTheme(){
+    try {
+      const menu = Array.from(document.querySelectorAll('.th-menu-label')).map((el) => {
+        const i = el.dataset.i;
+        const show = document.querySelector('.th-menu-show[data-i="'+i+'"]').checked;
+        return { key: el.dataset.key, label: el.value.trim(), show };
+      });
+      const games = {};
+      THEME_GAMES.forEach((g) => {
+        games[g.id] = {
+          name: $('thg-'+g.id+'-name').value.trim(),
+          meta: $('thg-'+g.id+'-meta').value.trim(),
+          img: $('thg-'+g.id+'-img').value.trim(),
+          badgeShow: $('thg-'+g.id+'-badgeshow').checked,
+          badgeText: $('thg-'+g.id+'-badgetext').value.trim(),
+          badgeColor: $('thg-'+g.id+'-badgecolor').value,
+        };
+      });
+      const theme = {
+        brandName: $('th-brand').value.trim() || 'GAMEGACOR',
+        colors: { gold: $('th-gold').value, green: $('th-green').value, bg: $('th-bg').value },
+        toggles: { hover: $('th-hover').checked },
+        menu, games,
+      };
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'lobby_theme', value: theme } });
+      const st = $('th-status'); if (st){ st.textContent = 'Tersimpan ✓ — refresh lobby untuk lihat'; setTimeout(() => { st.textContent = ''; }, 4000); }
+      toast('Tampilan lobby tersimpan ✓');
+    } catch (e) { toast('Gagal simpan tampilan: ' + e.message, 'error'); }
+  }
+  $('th-save')?.addEventListener('click', saveTheme);
+  loadTheme();
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();
