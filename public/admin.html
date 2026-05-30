@@ -192,13 +192,14 @@
   <header>
     <h1>🎰 GAMEGACOR ADMIN</h1>
     <div class="meta">
-      <span id="adm-online" title="Pemain online (yang tampil ke pemain)" style="display:inline-flex;align-items:center;gap:5px;font-weight:800;color:#fff;background:rgba(255,45,45,.16);border:1px solid rgba(255,80,80,.5);border-radius:20px;padding:3px 11px;margin-right:14px;">
-        <span style="font-size:14px;">👁️</span><span id="adm-online-num">0</span>&nbsp;online
-      </span>
       <span id="hdr-count">0 user</span> · <span id="hdr-now"></span>
       <button id="adm-logout" class="small-btn" style="margin-left:12px;">Logout</button>
     </div>
   </header>
+
+  <div id="adm-online" title="Pemain online (sinkron dengan game)" style="position:fixed;top:72px;right:30px;z-index:50;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#fff;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.6);border-radius:20px;padding:5px 14px;">
+    <span style="font-size:15px;">👁️</span><span id="adm-online-num" style="color:#5be07a;">0</span>&nbsp;online
+  </div>
   <div class="admin-layout">
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -1194,24 +1195,29 @@
 <!-- Lively "tampil ke pemain" counter — MUST match lobby.html formula -->
 <script>
 (function(){
+  // Same formula + config as lobby/game so the number stays in sync (esp. when manual is set).
+  var _manual = 0;
   function targetOnline(){
+    if (_manual > 0){ var sp = Math.max(3, Math.round(_manual*0.02)); return _manual + (Math.floor(Math.random()*(sp*2+1)) - sp); }
     var h = new Date().getHours();
     var wave = Math.sin((h - 4) / 24 * Math.PI * 2);
-    var base = 600 + Math.round((wave + 1) / 2 * 1850);
-    return base + (Math.floor(Math.random()*140) - 40);
+    return 600 + Math.round((wave + 1) / 2 * 1850) + (Math.floor(Math.random()*140) - 40);
   }
-  var cur = targetOnline();
-  var el = document.getElementById('stat-online-display');
-  var hdr = document.getElementById('adm-online-num');
-  function render(n){ var t = Math.max(50, Math.round(n)).toLocaleString('id-ID'); if (el) el.textContent = t; if (hdr) hdr.textContent = t; }
-  render(cur);
-  setInterval(function(){
-    var tgt = targetOnline();
-    var diff = tgt - cur;
-    var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
-    cur += step + (Math.floor(Math.random()*9) - 4);
-    render(cur);
-  }, 3200);
+  var statEl = document.getElementById('stat-online-display');
+  var hdrEl = document.getElementById('adm-online-num');
+  var cur;
+  function render(n){ var t = Math.max(1, Math.round(n)).toLocaleString('id-ID'); if (statEl) statEl.textContent = t; if (hdrEl) hdrEl.textContent = t; }
+  function start(){
+    cur = targetOnline(); render(cur);
+    setInterval(function(){
+      var tgt = targetOnline();
+      var diff = tgt - cur;
+      var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+      cur += step + (Math.floor(Math.random()*9) - 4);
+      render(cur);
+    }, 3200);
+  }
+  fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(function(cfg){ _manual = (cfg && cfg.onlineManual) || 0; start(); }).catch(function(){ start(); });
 })();
 </script>
 
