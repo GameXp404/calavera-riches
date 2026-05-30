@@ -220,19 +220,23 @@
   }
   .profile-mini {
     display: flex; align-items: center; gap: 8px;
-    padding: 4px 14px 4px 4px;
-    background: rgba(255, 210, 77, 0.1);
-    border: 1px solid rgba(255, 210, 77, 0.3);
-    border-radius: 20px;
+    padding: 6px 14px 6px 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     cursor: pointer;
   }
   .profile-mini .avatar-mini {
-    width: 28px; height: 28px;
-    background: url('/assets/img/catrina.png') center/cover;
+    width: 26px; height: 26px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    border: 1px solid var(--gold);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
   }
-  .profile-mini-name { font-size: 12px; color: var(--gold); font-weight: 700; }
+  .profile-mini .avatar-mini::before { content: '👤'; opacity: .8; }
+  .profile-mini-name { font-size: 11px; color: #b8c5d5; font-weight: 700; letter-spacing: 1px; }
+  #top-time.brand-time { font-size: 12px; font-weight: 600; letter-spacing: 0; color: #9aa3c0; }
   .balance-chip {
     display: flex; align-items: center; gap: 6px;
     padding: 6px 14px;
@@ -641,10 +645,7 @@
       <div class="logo-dot"></div>
       <span>GAMEGACOR</span>
       <span id="gg-online" title="Sedang online & bermain"><span class="gg-dot2"></span><span id="gg-online-num">0</span></span>
-    </div>
-    <div class="top-info">
-      <span id="top-time">—</span>
-      <span class="lang-flag">INDONESIA · BHS INDONESIA</span>
+      <span id="top-time" class="brand-time">—</span>
     </div>
     <div class="top-actions">
       <!-- Guest mode (default) -->
