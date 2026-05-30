@@ -198,8 +198,13 @@
   </header>
 
   <style>@keyframes admpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}} #adm-online .adm-dot{width:9px;height:9px;border-radius:50%;background:#36d96b;box-shadow:0 0 8px #36d96b;animation:admpulse 1.5s infinite;}</style>
-  <div id="adm-online" title="Pemain online (sinkron dengan game yang dibuka)" style="position:fixed;top:72px;right:30px;z-index:50;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#5be07a;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.6);border-radius:20px;padding:5px 14px;">
-    <span class="adm-dot"></span><span id="adm-online-num">0</span>&nbsp;online
+  <div style="position:fixed;top:72px;right:30px;z-index:50;display:flex;align-items:center;gap:8px;">
+    <div id="adm-online-real" title="Pemain ASLI yang online (spin dalam 5 menit terakhir)" style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#8fbcff;background:rgba(90,140,255,.14);border:1px solid rgba(90,140,255,.5);border-radius:20px;padding:5px 13px;">
+      <span style="font-size:13px;">👤</span><span id="adm-real-num">0</span>
+    </div>
+    <div id="adm-online" title="Tampilan ke pemain (sinkron dengan game yang dibuka)" style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#5be07a;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.6);border-radius:20px;padding:5px 14px;">
+      <span class="adm-dot"></span><span id="adm-online-num">0</span>
+    </div>
   </div>
   <div class="admin-layout">
     <!-- SIDEBAR -->
@@ -669,6 +674,7 @@
     const onlineCutoff = Date.now() - 5 * 60 * 1000;
     const onlineReal = users.filter(u => u.lastSpin && new Date(u.lastSpin).getTime() >= onlineCutoff).length;
     $('stat-online').textContent = onlineReal;
+    const _arN = document.getElementById('adm-real-num'); if (_arN) _arN.textContent = onlineReal;
     $('stat-balance').textContent = fmtMoney(totalBal);
     $('stat-spins').textContent = fmtMoney(totalSpin);
     $('stat-totalbet').textContent = fmtMoney(totalBet);
