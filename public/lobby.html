@@ -640,14 +640,13 @@
     <div class="brand">
       <div class="logo-dot"></div>
       <span>GAMEGACOR</span>
+      <span id="gg-online" title="Sedang online & bermain"><span class="gg-dot2"></span><span id="gg-online-num">0</span></span>
     </div>
     <div class="top-info">
       <span id="top-time">—</span>
       <span class="lang-flag">INDONESIA · BHS INDONESIA</span>
     </div>
     <div class="top-actions">
-      <span id="gg-online" title="Sedang menonton & bermain"><span class="gg-eye">👁️</span><span id="gg-online-num">0</span></span>
-      <button id="hdr-download" class="hdr-download" title="Download App">⬇️&nbsp;APP</button>
       <!-- Guest mode (default) -->
       <div id="guest-actions" style="display: flex; gap: 8px; align-items: center;">
         <button class="btn-login-top" id="btn-show-login">LOGIN</button>
@@ -676,45 +675,35 @@
   <!-- CATEGORY NAV (KOKO303-style horizontal scroll) -->
   <nav class="cat-nav">
     <button class="cat-item active" data-cat="slots">
-      <span class="cat-icon">🎰</span>
       <span>SLOTS</span>
       <span class="cat-badge">HOT</span>
     </button>
     <button class="cat-item" data-cat="live">
-      <span class="cat-icon">🎥</span>
       <span>LIVE GAMES</span>
       <span class="cat-badge">SOON</span>
     </button>
     <button class="cat-item" data-cat="sports">
-      <span class="cat-icon">⚽</span>
       <span>SPORTS</span>
     </button>
     <button class="cat-item" data-cat="casino">
-      <span class="cat-icon">🃏</span>
       <span>CASINO</span>
     </button>
     <button class="cat-item" data-cat="lotre">
-      <span class="cat-icon">🎟️</span>
       <span>LOTRE</span>
     </button>
     <button class="cat-item" data-cat="arcade">
-      <span class="cat-icon">🎮</span>
       <span>E-GAMES</span>
     </button>
     <button class="cat-item" data-cat="fish">
-      <span class="cat-icon">🐟</span>
       <span>TEMBAK IKAN</span>
     </button>
     <button class="cat-item" data-cat="promo">
-      <span class="cat-icon">🎁</span>
       <span>PROMOSI</span>
     </button>
     <button class="cat-item" data-cat="refer">
-      <span class="cat-icon">👥</span>
       <span>REFERRAL</span>
     </button>
     <button class="cat-item" data-cat="rtp">
-      <span class="cat-icon">📊</span>
       <span>RTP LIVE</span>
     </button>
   </nav>
@@ -1133,9 +1122,9 @@
 
 <!-- ============ LIVE PLAYER COUNT + WIN FEED (self-contained) ============ -->
 <style>
-  #gg-online{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:#fff;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.55);border-radius:20px;padding:3px 11px;}
-  #gg-online #gg-online-num{color:#5be07a;}
-  #gg-online .gg-eye{font-size:14px;animation:ggblink 3.2s infinite;}
+  #gg-online{display:inline-flex;align-items:center;gap:5px;margin-left:12px;font-size:12px;font-weight:800;letter-spacing:0;color:#fff;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:3px 10px;}
+  #gg-online #gg-online-num{color:#fff;}
+  #gg-online .gg-dot2{width:7px;height:7px;border-radius:50%;background:#36d96b;box-shadow:0 0 6px #36d96b;animation:ggpulse 1.5s infinite;}
   @keyframes ggblink{0%,92%,100%{opacity:1}95%{opacity:.25}}
   .hdr-download{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;color:#06210f;background:linear-gradient(180deg,#5be07a,#27b052);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;}
   .hdr-download:active{transform:scale(.95);}
