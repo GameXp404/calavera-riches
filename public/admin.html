@@ -213,6 +213,7 @@
         <div class="sidebar-title">PENGATURAN UTAMA</div>
         <div class="sidebar-link active" data-view="lobby"><span class="icon">🏛️</span><span>Pengaturan Lobby</span></div>
         <div class="sidebar-link" data-view="theme"><span class="icon">🎨</span><span>Tampilan Lobby</span></div>
+        <div class="sidebar-link" data-view="rtp"><span class="icon">🎲</span><span>Kontrol RTP</span></div>
       </div>
       <div class="sidebar-group">
         <div class="sidebar-title">PENGATURAN GAME</div>
@@ -518,6 +519,86 @@
     </section>
     <!-- /VIEW: TAMPILAN -->
 
+    <!-- ============================================================
+         VIEW: KONTROL RTP — global, per-game, special modes, per-user
+         ============================================================ -->
+    <section id="view-rtp" class="view">
+      <h2 class="view-title">🎲 Kontrol RTP <span class="crumb">/ Global, Per-Game &amp; Per-User</span></h2>
+
+      <h2 class="section-title">🌐 RTP Global (default semua game &amp; pemain)</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;">
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Preset
+            <select id="rtp-g-preset" style="padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">
+              <option value="boost">🟢 Boost (RTP tinggi)</option>
+              <option value="standard">⚖️ Standard</option>
+              <option value="tight">🔴 Tight (RTP rendah)</option>
+              <option value="custom">🎯 Custom</option>
+            </select></label>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">RTP %
+            <input type="number" id="rtp-g-rtp" min="80" max="99" style="width:90px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Win Rate %
+            <input type="number" id="rtp-g-winrate" min="5" max="90" style="width:90px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Volatility
+            <select id="rtp-g-vol" style="padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">
+              <option value="0">Rendah</option><option value="1">Sedang</option><option value="2">Tinggi</option>
+            </select></label>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Max Win (×)
+            <input type="number" id="rtp-g-maxwin" min="10" style="width:100px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+        </div>
+      </div>
+
+      <h2 class="section-title">🎮 Per-Game (timpa global)</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:12px;">Centang <em>override</em> kalau game ini mau beda dari global. Preset otomatis nyetir difficulty game (Easy/Med/Hard).</p>
+        <div id="rtp-games" style="display:flex;flex-direction:column;gap:14px;"></div>
+      </div>
+
+      <h2 class="section-title">⚡ Mode Spesial (engagement &amp; retensi)</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;flex-wrap:wrap;"><input type="checkbox" id="rtp-np-on"> <strong>New Player Boost</strong> — [<input type="number" id="rtp-np-spins" min="1" style="width:64px;padding:4px 7px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">] spin pertama, RTP [<input type="number" id="rtp-np-rtp" min="80" max="99" style="width:64px;padding:4px 7px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">]%</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;flex-wrap:wrap;"><input type="checkbox" id="rtp-pity-on"> <strong>Pity Timer</strong> — kalah [<input type="number" id="rtp-pity-losses" min="1" style="width:64px;padding:4px 7px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">]× beruntun → kasih menang kecil</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;"><input type="checkbox" id="rtp-cb-on"> <strong>Comeback Boost</strong> — idle [<input type="number" id="rtp-cb-days" min="1" style="width:64px;padding:4px 7px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">] hari → boost [<input type="number" id="rtp-cb-spins" min="1" style="width:64px;padding:4px 7px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">] spin</label>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <button id="rtp-save" class="small-btn" style="background:var(--success);color:white;border:none;">💾 Simpan RTP (Global + Per-Game + Spesial)</button>
+        <span id="rtp-status" class="hint"></span>
+      </div>
+
+      <h2 class="section-title" style="margin-top:22px;">👤 Override Per-User</h2>
+      <div class="setting-card" style="margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Username
+            <input type="text" id="rtp-u-search" placeholder="mis. maman99" style="width:160px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <button id="rtp-u-load" class="small-btn">🔍 Cek</button>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">Preset
+            <select id="rtp-u-preset" style="padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">
+              <option value="">(pakai default)</option>
+              <option value="boost">🟢 Boost</option>
+              <option value="standard">⚖️ Standard</option>
+              <option value="tight">🔴 Tight</option>
+              <option value="custom">🎯 Custom</option>
+            </select></label>
+          <label style="font-size:13px;display:flex;flex-direction:column;gap:5px;">RTP % (custom)
+            <input type="number" id="rtp-u-rtp" min="80" max="99" style="width:90px;padding:6px 9px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <button id="rtp-u-save" class="small-btn" style="background:var(--success);color:white;border:none;">💾 Simpan User</button>
+          <button id="rtp-u-reset" class="small-btn" style="background:#7a2f3a;color:#fff;border:none;">🔄 Reset</button>
+        </div>
+        <p id="rtp-u-current" class="hint" style="margin-top:8px;">—</p>
+        <div style="margin-top:14px;">
+          <strong style="font-size:12px;">Override aktif:</strong>
+          <div id="rtp-u-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:12px;"></div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>Prioritas:</strong> User &gt; Per-Game (jika override) &gt; Global. Preset → difficulty: 🟢 Boost = Easy, ⚖️ Standard = Medium, 🔴 Tight = Hard.
+        <strong>Catatan:</strong> Soft control (logika di client) — cocok untuk social casino coin virtual. Knight &amp; Calavera baca otomatis saat dibuka/refresh.
+      </div>
+    </section>
+    <!-- /VIEW: KONTROL RTP -->
+
     </main>
   </div>
 </div>
@@ -646,6 +727,7 @@
     document.querySelectorAll('.sidebar-link').forEach((l) => l.classList.toggle('active', l.dataset.view === viewId));
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (window.__admOnlineCtx) window.__admOnlineCtx(viewId);
+    if (viewId === 'rtp' && window.__loadRtp) window.__loadRtp();
   }
   document.querySelectorAll('.sidebar-link').forEach((link) => {
     link.addEventListener('click', () => switchView(link.dataset.view));
@@ -1343,6 +1425,173 @@
   }
   $('th-save')?.addEventListener('click', saveTheme);
   loadTheme();
+
+  // ============================================================
+  // KONTROL RTP — global + per-game + special + per-user overrides
+  // ============================================================
+  const RTP_PRESET_RTP = { boost:97, standard:92, tight:87 };
+  const RTP_GAMES = [{ id:'knight', title:'⚔️ Knight Kingdom' }, { id:'calavera', title:'🎰 Calavera Riches' }];
+  const RTP_DEFAULT = {
+    global: { preset:'standard', rtp:92, winRate:35, volatility:1, maxWin:1000 },
+    games: {
+      knight:   { override:false, preset:'standard', rtp:90, winRate:32, volatility:1, maxWin:1000 },
+      calavera: { override:false, preset:'standard', rtp:92, winRate:35, volatility:1, maxWin:1000 },
+    },
+    special: {
+      newPlayerBoost: { on:false, spins:20, rtp:97 },
+      pity: { on:false, losses:8 },
+      comeback: { on:false, days:3, spins:10 },
+    },
+  };
+  const rtpPresetOpts = () => '<option value="boost">🟢 Boost</option><option value="standard">⚖️ Standard</option><option value="tight">🔴 Tight</option><option value="custom">🎯 Custom</option>';
+  const rtpPresetLabel = (p) => p==='boost'?'🟢 Boost':p==='tight'?'🔴 Tight':p==='custom'?'🎯 Custom':'⚖️ Standard';
+  const rtpResolveRtp = (lv) => { lv=lv||{}; return lv.preset==='custom' ? (parseInt(lv.rtp,10)||92) : (RTP_PRESET_RTP[lv.preset]||92); };
+  const rtpDifficulty = (preset, rtp) => { if (preset==='boost') return 0; if (preset==='standard') return 1; if (preset==='tight') return 2; const r=rtp||92; return r>=95?0:r>=90?1:2; };
+  let _rtpUsers = {};
+
+  function renderRtpGames(games){
+    const wrap = $('rtp-games'); if (!wrap) return; wrap.innerHTML = '';
+    RTP_GAMES.forEach((g) => {
+      const c = games[g.id] || {};
+      const box = document.createElement('div');
+      box.style.cssText = 'border:1px solid #2a2545;border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;';
+      box.innerHTML = '<strong style="width:100%;font-size:13px;">'+g.title+'</strong>'
+        + '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" class="rtp-g-ovr" data-id="'+g.id+'" '+(c.override?'checked':'')+'> override global</label>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">Preset<select class="rtp-g-pre" data-id="'+g.id+'" style="'+_thInp('')+'">'+rtpPresetOpts()+'</select></label>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">RTP %<input type="number" class="rtp-g-val" data-id="'+g.id+'" min="80" max="99" value="'+(c.rtp||92)+'" style="'+_thInp('width:80px;')+'"></label>'
+        + '<label style="font-size:12px;display:flex;flex-direction:column;gap:4px;">Win %<input type="number" class="rtp-g-win" data-id="'+g.id+'" min="5" max="90" value="'+(c.winRate||32)+'" style="'+_thInp('width:80px;')+'"></label>';
+      wrap.appendChild(box);
+      box.querySelector('.rtp-g-pre').value = c.preset || 'standard';
+    });
+  }
+  function renderRtpUserList(){
+    const wrap = $('rtp-u-list'); if (!wrap) return; wrap.innerHTML = '';
+    const keys = Object.keys(_rtpUsers);
+    if (!keys.length){ wrap.innerHTML = '<span class="hint">Belum ada override user.</span>'; return; }
+    keys.forEach((u) => {
+      const o = _rtpUsers[u] || {};
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;';
+      row.innerHTML = '<span style="min-width:120px;font-weight:700;">'+u+'</span>'
+        + '<span>'+rtpPresetLabel(o.preset)+' ('+rtpResolveRtp(o)+'%)</span>'
+        + '<button class="small-btn rtp-u-del" data-u="'+u+'" style="margin-left:auto;background:#7a2f3a;color:#fff;border:none;">Hapus</button>';
+      wrap.appendChild(row);
+    });
+    wrap.querySelectorAll('.rtp-u-del').forEach((b) => b.addEventListener('click', async () => {
+      delete _rtpUsers[b.dataset.u];
+      try { await api('/api/admin/settings', { method:'PATCH', body:{ key:'rtp_users', value:_rtpUsers } }); renderRtpUserList(); toast('Override '+b.dataset.u+' dihapus'); }
+      catch (e){ toast('Gagal hapus: '+e.message, 'error'); }
+    }));
+  }
+  async function loadRtp(){
+    try {
+      const s = await api('/api/admin/settings');
+      const cfg = Object.assign({}, RTP_DEFAULT, s.rtp_config || {});
+      const gl = cfg.global || RTP_DEFAULT.global;
+      $('rtp-g-preset').value = gl.preset || 'standard';
+      $('rtp-g-rtp').value = gl.rtp || 92;
+      $('rtp-g-winrate').value = gl.winRate || 35;
+      $('rtp-g-vol').value = (gl.volatility != null ? gl.volatility : 1);
+      $('rtp-g-maxwin').value = gl.maxWin || 1000;
+      renderRtpGames(cfg.games || {});
+      const sp = cfg.special || RTP_DEFAULT.special;
+      $('rtp-np-on').checked = !!(sp.newPlayerBoost && sp.newPlayerBoost.on);
+      $('rtp-np-spins').value = (sp.newPlayerBoost && sp.newPlayerBoost.spins) || 20;
+      $('rtp-np-rtp').value = (sp.newPlayerBoost && sp.newPlayerBoost.rtp) || 97;
+      $('rtp-pity-on').checked = !!(sp.pity && sp.pity.on);
+      $('rtp-pity-losses').value = (sp.pity && sp.pity.losses) || 8;
+      $('rtp-cb-on').checked = !!(sp.comeback && sp.comeback.on);
+      $('rtp-cb-days').value = (sp.comeback && sp.comeback.days) || 3;
+      $('rtp-cb-spins').value = (sp.comeback && sp.comeback.spins) || 10;
+      _rtpUsers = s.rtp_users || {};
+      renderRtpUserList();
+    } catch (e) {}
+  }
+  window.__loadRtp = loadRtp;
+
+  function buildRtpConfig(){
+    const games = {};
+    RTP_GAMES.forEach((g) => {
+      games[g.id] = {
+        override: document.querySelector('.rtp-g-ovr[data-id="'+g.id+'"]').checked,
+        preset: document.querySelector('.rtp-g-pre[data-id="'+g.id+'"]').value,
+        rtp: parseInt(document.querySelector('.rtp-g-val[data-id="'+g.id+'"]').value, 10) || 92,
+        winRate: parseInt(document.querySelector('.rtp-g-win[data-id="'+g.id+'"]').value, 10) || 32,
+      };
+    });
+    return {
+      global: {
+        preset: $('rtp-g-preset').value,
+        rtp: parseInt($('rtp-g-rtp').value, 10) || 92,
+        winRate: parseInt($('rtp-g-winrate').value, 10) || 35,
+        volatility: parseInt($('rtp-g-vol').value, 10) || 0,
+        maxWin: parseInt($('rtp-g-maxwin').value, 10) || 1000,
+      },
+      games,
+      special: {
+        newPlayerBoost: { on:$('rtp-np-on').checked, spins:parseInt($('rtp-np-spins').value,10)||20, rtp:parseInt($('rtp-np-rtp').value,10)||97 },
+        pity: { on:$('rtp-pity-on').checked, losses:parseInt($('rtp-pity-losses').value,10)||8 },
+        comeback: { on:$('rtp-cb-on').checked, days:parseInt($('rtp-cb-days').value,10)||3, spins:parseInt($('rtp-cb-spins').value,10)||10 },
+      },
+    };
+  }
+  async function saveRtp(){
+    try {
+      const cfg = buildRtpConfig();
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'rtp_config', value: cfg } });
+      // Backward-compat: drive each game's legacy <game>_difficulty so games react immediately.
+      for (const g of RTP_GAMES){
+        const gc = cfg.games[g.id];
+        const lv = gc.override ? gc : cfg.global;
+        await api('/api/admin/settings', { method:'PATCH', body:{ key:g.id+'_difficulty', value: rtpDifficulty(lv.preset, lv.rtp) } });
+      }
+      const st = $('rtp-status'); if (st){ st.textContent='Tersimpan ✓ — berlaku saat game dibuka/refresh'; setTimeout(()=>{ st.textContent=''; }, 4000); }
+      toast('Kontrol RTP tersimpan ✓');
+    } catch (e) { toast('Gagal simpan RTP: '+e.message, 'error'); }
+  }
+  $('rtp-save')?.addEventListener('click', saveRtp);
+  // Auto-fill RTP% when a preset is picked (global + per-game), unless Custom.
+  $('rtp-g-preset')?.addEventListener('change', () => { const p = $('rtp-g-preset').value; if (p !== 'custom') $('rtp-g-rtp').value = RTP_PRESET_RTP[p]; });
+  $('rtp-games')?.addEventListener('change', (e) => {
+    if (!e.target.classList.contains('rtp-g-pre')) return;
+    const id = e.target.dataset.id, p = e.target.value;
+    if (p !== 'custom') document.querySelector('.rtp-g-val[data-id="'+id+'"]').value = RTP_PRESET_RTP[p];
+  });
+  $('rtp-u-preset')?.addEventListener('change', () => { const p = $('rtp-u-preset').value; if (p && p !== 'custom') $('rtp-u-rtp').value = RTP_PRESET_RTP[p]; });
+
+  async function rtpUserLoad(){
+    const u = $('rtp-u-search').value.trim();
+    const cur = $('rtp-u-current');
+    if (!u){ if (cur) cur.textContent = 'Isi username dulu.'; return; }
+    try {
+      const r = await (await fetch('/api/rtp?game=knight&user='+encodeURIComponent(u))).json();
+      const o = _rtpUsers[u];
+      $('rtp-u-preset').value = o ? (o.preset||'') : '';
+      $('rtp-u-rtp').value = (o && o.preset==='custom') ? (o.rtp||92) : '';
+      if (cur) cur.textContent = 'RTP aktif "'+u+'": '+rtpPresetLabel(r.preset)+' ('+r.rtp+'%) — sumber: '+r.source+(o?' · ada override user':' · belum ada override');
+    } catch (e){ if (cur) cur.textContent = 'Gagal cek: '+e.message; }
+  }
+  $('rtp-u-load')?.addEventListener('click', rtpUserLoad);
+  $('rtp-u-save')?.addEventListener('click', async () => {
+    const u = $('rtp-u-search').value.trim();
+    if (!u){ toast('Isi username dulu', 'error'); return; }
+    const preset = $('rtp-u-preset').value;
+    if (!preset){ toast('Pilih preset (atau pakai Reset untuk hapus)', 'error'); return; }
+    _rtpUsers[u] = preset==='custom' ? { preset, rtp: parseInt($('rtp-u-rtp').value,10)||92 } : { preset };
+    try {
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'rtp_users', value:_rtpUsers } });
+      renderRtpUserList(); rtpUserLoad(); toast('Override '+u+' tersimpan ✓');
+    } catch (e){ toast('Gagal simpan user: '+e.message, 'error'); }
+  });
+  $('rtp-u-reset')?.addEventListener('click', async () => {
+    const u = $('rtp-u-search').value.trim();
+    if (!u || !_rtpUsers[u]){ toast('Gak ada override buat user itu', 'error'); return; }
+    delete _rtpUsers[u];
+    try {
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'rtp_users', value:_rtpUsers } });
+      $('rtp-u-preset').value=''; $('rtp-u-rtp').value=''; renderRtpUserList(); rtpUserLoad(); toast('Override '+u+' direset ✓');
+    } catch (e){ toast('Gagal reset: '+e.message, 'error'); }
+  });
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();
