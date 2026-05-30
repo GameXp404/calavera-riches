@@ -192,6 +192,9 @@
   <header>
     <h1>🎰 GAMEGACOR ADMIN</h1>
     <div class="meta">
+      <span id="adm-online" title="Pemain online (yang tampil ke pemain)" style="display:inline-flex;align-items:center;gap:5px;font-weight:800;color:#fff;background:rgba(255,45,45,.16);border:1px solid rgba(255,80,80,.5);border-radius:20px;padding:3px 11px;margin-right:14px;">
+        <span style="font-size:14px;">👁️</span><span id="adm-online-num">0</span>&nbsp;online
+      </span>
       <span id="hdr-count">0 user</span> · <span id="hdr-now"></span>
       <button id="adm-logout" class="small-btn" style="margin-left:12px;">Logout</button>
     </div>
@@ -1199,7 +1202,8 @@
   }
   var cur = targetOnline();
   var el = document.getElementById('stat-online-display');
-  function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
+  var hdr = document.getElementById('adm-online-num');
+  function render(n){ var t = Math.max(50, Math.round(n)).toLocaleString('id-ID'); if (el) el.textContent = t; if (hdr) hdr.textContent = t; }
   render(cur);
   setInterval(function(){
     var tgt = targetOnline();
