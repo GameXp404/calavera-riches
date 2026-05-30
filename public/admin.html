@@ -1564,7 +1564,7 @@
     const cur = $('rtp-u-current');
     if (!u){ if (cur) cur.textContent = 'Isi username dulu.'; return; }
     try {
-      const r = await (await fetch('/api/rtp?game=knight&user='+encodeURIComponent(u))).json();
+      const r = await (await fetch('/api/game-config?game=knight&user='+encodeURIComponent(u))).json();
       const o = _rtpUsers[u];
       $('rtp-u-preset').value = o ? (o.preset||'') : '';
       $('rtp-u-rtp').value = (o && o.preset==='custom') ? (o.rtp||92) : '';
