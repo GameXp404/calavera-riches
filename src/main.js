@@ -2239,14 +2239,14 @@ window.addEventListener('load', () => {
   setupMainMenuUI();
   setupLoginAttract();
   setupJackpotHUD();
-  // OPEN LOGIN: any saved username = auto-resume to main menu
+  // GameGacor: identity & auth are handled by the lobby — the game NEVER shows its own
+  // login. Always go straight to the start screen (main menu). Use the lobby username if
+  // present, otherwise a neutral default so per-user data still works.
   const savedUser = localStorage.getItem(LOGIN_KEY);
-  if (savedUser && savedUser.trim()) {
-    showMainMenu();
-  } else {
-    showLogin();
-    document.getElementById('login-user').focus();
+  if (!savedUser || !savedUser.trim()) {
+    localStorage.setItem(LOGIN_KEY, localStorage.getItem('calavera_user') || 'Player');
   }
+  showMainMenu();
   // 4. PWA: register service worker for offline play + installable.
   //    Only in production builds (dev mode bypasses SW for HMR to work).
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
