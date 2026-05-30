@@ -375,7 +375,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     padding: 0 12px;
-    margin-top: 48px;
+    margin-top: 24px;
   }
   @media (min-width: 600px) { .games-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (min-width: 900px) { .games-grid { grid-template-columns: repeat(5, 1fr); } }
@@ -625,7 +625,7 @@
 
   /* Mobile-first responsive */
   @media (min-width: 720px) {
-    .games-grid { grid-template-columns: repeat(3, 1fr); max-width: 720px; margin: 0 auto; }
+    .games-grid { grid-template-columns: repeat(3, 1fr); max-width: 720px; margin: 24px auto 0; }
     .game-tile.featured { grid-column: 1 / -1; aspect-ratio: 16 / 5; }
     .hero, .section-title { max-width: 720px; margin-left: auto; margin-right: auto; }
   }
