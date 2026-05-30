@@ -2090,10 +2090,10 @@ function setupMainMenuUI() {
     if (Game._adminRefresh) Game._adminRefresh();
   });
   if (quit) {
-    // Re-label + change behavior if user came from lobby (has lobby token)
+    // From lobby: the full top bar already provides "← LOBBY", so hide the redundant
+    // corner button entirely (avoids a stray 🏠 floating over the start screen).
     if (localStorage.getItem('calavera_lobby_token')) {
-      quit.title = 'Kembali ke Lobby';
-      quit.innerHTML = '🏠';
+      quit.style.display = 'none';
     }
     quit.addEventListener('click', () => {
       // From lobby → just redirect back (no logout)

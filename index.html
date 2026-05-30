@@ -212,16 +212,18 @@
     </div>
   </div>
 
-  <div id="game-container">
+  <!-- Full top bar (matches Knight layout) — only visible when user came from lobby.
+       Kept OUTSIDE #game-container so the container's transform/scale doesn't trap it in a
+       lower stacking context; z-index sits above #main-menu so it shows on the start screen too. -->
+  <div id="cal-topbar" class="cal-topbar hidden">
+    <button id="btn-back-lobby" class="cal-back" title="Kembali ke Lobby">&larr;&nbsp;LOBBY</button>
+    <span class="cal-title">&#x1F480; CALAVERA RICHES</span>
+    <span id="cal-online" class="cal-online" title="Pemain online"><span class="cal-dot"></span><span id="cal-online-num">—</span>&nbsp;main</span>
+    <span id="cal-bar-balance" class="cal-bar-balance">&#x1F4B0; <span id="cal-bar-balance-val">—</span></span>
+    <span id="cal-bar-user" class="cal-bar-user">—</span>
+  </div>
 
-    <!-- Full top bar (matches Knight layout) — only visible when user came from lobby -->
-    <div id="cal-topbar" class="cal-topbar hidden">
-      <button id="btn-back-lobby" class="cal-back" title="Kembali ke Lobby">&larr;&nbsp;LOBBY</button>
-      <span class="cal-title">&#x1F480; CALAVERA RICHES</span>
-      <span id="cal-online" class="cal-online" title="Pemain online"><span class="cal-dot"></span><span id="cal-online-num">—</span>&nbsp;main</span>
-      <span id="cal-bar-balance" class="cal-bar-balance">&#x1F4B0; <span id="cal-bar-balance-val">—</span></span>
-      <span id="cal-bar-user" class="cal-bar-user">—</span>
-    </div>
+  <div id="game-container">
 
     <div id="hud-top">
       <div class="header-frame"></div>

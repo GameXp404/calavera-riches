@@ -3937,7 +3937,7 @@ body:has(#freespin-badge) #marquee-banner { display: none; }
 .cal-topbar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  z-index: 300;
+  z-index: 900;
   display: flex; align-items: center; gap: 12px;
   height: 48px; padding: 8px 14px;
   background: linear-gradient(90deg, #1a1a2e 0%, #232348 50%, #1a1a2e 100%);
