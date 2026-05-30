@@ -225,6 +225,8 @@
       <div class="stat-card"><div class="label">Total Bet</div><div class="val" id="stat-totalbet">0</div></div>
       <div class="stat-card"><div class="label">Total Win</div><div class="val" id="stat-totalwin">0</div></div>
       <div class="stat-card"><div class="label">RTP Aktual</div><div class="val" id="stat-rtp">—</div></div>
+      <div class="stat-card"><div class="label">🟢 Online (asli, 5mnt)</div><div class="val" id="stat-online" style="color:#36d96b;">0</div></div>
+      <div class="stat-card"><div class="label">👥 Tampil ke pemain</div><div class="val" id="stat-online-display" style="color:#ffd24a;">—</div></div>
     </div>
     <div class="toolbar">
       <input id="search-input" placeholder="🔍 Cari username...">
@@ -608,6 +610,10 @@
       totalWin += u.totalWin;
     });
     $('stat-users').textContent = users.length;
+    // ONLINE (asli): pemain yang spin dalam 5 menit terakhir
+    const onlineCutoff = Date.now() - 5 * 60 * 1000;
+    const onlineReal = users.filter(u => u.lastSpin && new Date(u.lastSpin).getTime() >= onlineCutoff).length;
+    $('stat-online').textContent = onlineReal;
     $('stat-balance').textContent = fmtMoney(totalBal);
     $('stat-spins').textContent = fmtMoney(totalSpin);
     $('stat-totalbet').textContent = fmtMoney(totalBet);
@@ -1083,6 +1089,29 @@
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();
+})();
+</script>
+
+<!-- Lively "tampil ke pemain" counter — MUST match lobby.html formula -->
+<script>
+(function(){
+  function targetOnline(){
+    var h = new Date().getHours();
+    var wave = Math.sin((h - 4) / 24 * Math.PI * 2);
+    var base = 600 + Math.round((wave + 1) / 2 * 1850);
+    return base + (Math.floor(Math.random()*140) - 40);
+  }
+  var cur = targetOnline();
+  var el = document.getElementById('stat-online-display');
+  function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
+  render(cur);
+  setInterval(function(){
+    var tgt = targetOnline();
+    var diff = tgt - cur;
+    var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+    cur += step + (Math.floor(Math.random()*9) - 4);
+    render(cur);
+  }, 3200);
 })();
 </script>
 

@@ -12,6 +12,7 @@
   <div id="gg-topbar">
     <button id="gg-back" type="button" title="Kembali ke Lobby">← LOBBY</button>
     <div id="gg-title">⚔️ KNIGHT KINGDOM SLOT</div>
+    <div id="gg-online-game" title="Pemain online"><span class="gg-dot"></span><span id="gg-online-game-num">—</span>&nbsp;main</div>
     <div id="gg-balance">💰 <span id="gg-balance-val">—</span></div>
     <div id="gg-user"><span id="gg-user-val">Guest</span></div>
   </div>
@@ -138,6 +139,33 @@
       }).catch(function (message) { alert(message); });
     };
     document.body.appendChild(script);
+  </script>
+
+  <style>
+    #gg-online-game{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:#36d96b;}
+    #gg-online-game .gg-dot{width:8px;height:8px;border-radius:50%;background:#36d96b;box-shadow:0 0 8px #36d96b;animation:ggpulse 1.5s infinite;}
+    @keyframes ggpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+  </style>
+  <script>
+    (function(){
+      function targetOnline(){
+        var h = new Date().getHours();
+        var wave = Math.sin((h - 4) / 24 * Math.PI * 2);
+        var base = 600 + Math.round((wave + 1) / 2 * 1850);
+        return base + (Math.floor(Math.random()*140) - 40);
+      }
+      var cur = targetOnline();
+      var el = document.getElementById('gg-online-game-num');
+      function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
+      render(cur);
+      setInterval(function(){
+        var tgt = targetOnline();
+        var diff = tgt - cur;
+        var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+        cur += step + (Math.floor(Math.random()*9) - 4);
+        render(cur);
+      }, 3200);
+    })();
   </script>
 </body>
 </html>

@@ -644,6 +644,10 @@
     <div class="top-info">
       <span id="top-time">—</span>
       <span class="lang-flag">INDONESIA · BHS INDONESIA</span>
+      <span id="gg-online" title="Pemain sedang bermain">
+        <span class="gg-online-dot"></span>
+        <span id="gg-online-num">0</span>&nbsp;bermain
+      </span>
     </div>
     <div class="top-actions">
       <!-- Guest mode (default) -->
@@ -664,6 +668,12 @@
       </div>
     </div>
   </header>
+
+  <!-- LIVE WIN FEED (scrolling marquee of recent wins) -->
+  <div id="gg-winfeed" title="Kemenangan pemain terbaru">
+    <span class="gg-winfeed-label">📣 MENANG</span>
+    <div class="gg-winfeed-mask"><div id="gg-winfeed-track"></div></div>
+  </div>
 
   <!-- CATEGORY NAV (KOKO303-style horizontal scroll) -->
   <nav class="cat-nav">
@@ -1135,5 +1145,63 @@
 })();
 </script>
 
+<!-- ============ LIVE PLAYER COUNT + WIN FEED (self-contained) ============ -->
+<style>
+  #gg-online{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#36d96b;letter-spacing:.3px;}
+  .gg-online-dot{width:8px;height:8px;border-radius:50%;background:#36d96b;box-shadow:0 0 8px #36d96b;animation:ggpulse 1.5s infinite;}
+  @keyframes ggpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+  #gg-winfeed{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#1c1330,#241640);border-top:1px solid #392a5e;border-bottom:1px solid #392a5e;padding:7px 12px;overflow:hidden;}
+  .gg-winfeed-label{flex:0 0 auto;font-size:11px;font-weight:900;color:#ffd24a;background:#3a2a10;border:1px solid #6b521c;border-radius:6px;padding:3px 8px;letter-spacing:.5px;}
+  .gg-winfeed-mask{flex:1 1 auto;overflow:hidden;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+  #gg-winfeed-track{display:inline-block;white-space:nowrap;will-change:transform;animation:ggmarquee 42s linear infinite;}
+  #gg-winfeed:hover #gg-winfeed-track{animation-play-state:paused;}
+  .gg-win-item{display:inline-block;padding:0 22px;font-size:13px;color:#d3c6f2;}
+  .gg-win-item b{color:#fff;}
+  .gg-win-item .amt{color:#ffd24a;font-weight:800;}
+  @keyframes ggmarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
+<script>
+(function(){
+  // ---------- LIVE PLAYER COUNT (lively animated, time-of-day aware) ----------
+  function targetOnline(){
+    var h = new Date().getHours();
+    var wave = Math.sin((h - 4) / 24 * Math.PI * 2);      // low ~4am, peak ~evening
+    var base = 600 + Math.round((wave + 1) / 2 * 1850);   // ~600..2450
+    return base + (Math.floor(Math.random()*140) - 40);
+  }
+  var cur = targetOnline();
+  var el = document.getElementById('gg-online-num');
+  function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
+  render(cur);
+  setInterval(function(){
+    var tgt = targetOnline();
+    var diff = tgt - cur;
+    var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+    cur += step + (Math.floor(Math.random()*9) - 4);      // jitter for liveliness
+    render(cur);
+  }, 3200);
+
+  // ---------- LIVE WIN FEED (simulated recent wins) ----------
+  var NAMES = ['budi','siti','andi','rina','joko','maya','agus','dewi','eko','putri','hendra','wati','bayu','lina','dani','sri','yudi','nita','rian','tari','arif','indah','fajar','citra','rizki','ayu','dimas','mega','wawan','novi','teguh','vina','ilham','rara','galih','sasa','bagas','kiki','reza','mela','samsul','jaya','maman','toni','yuni','adit','linda','rudi','desi','oki'];
+  var GAMES = ['Knight Kingdom','Calavera Riches','MiniSlots','Gates of Olympus','Sweet Bonanza','Mahjong Ways','Starlight Princess','Lucky Neko'];
+  var TIERS = [50000,80000,120000,250000,400000,750000,1200000,2500000,5000000,8800000,15000000];
+  function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function maskName(){ var n = rnd(NAMES); return n.slice(0,3) + '***' + (Math.floor(Math.random()*90)+10); }
+  function rndAmount(){ var b = rnd(TIERS); return b + Math.floor(Math.random()*b*0.6); }
+  function fmt(n){ return 'Rp ' + n.toLocaleString('id-ID'); }
+  function makeItem(){
+    return '<span class="gg-win-item">🏆 <b>'+maskName()+'</b> menang <span class="amt">'+fmt(rndAmount())+'</span> di '+rnd(GAMES)+'</span>';
+  }
+  var track = document.getElementById('gg-winfeed-track');
+  function refill(){
+    if (!track) return;
+    var html = '';
+    for (var i=0;i<14;i++) html += makeItem();
+    track.innerHTML = html + html;   // duplicate for seamless loop
+  }
+  refill();
+  setInterval(refill, 42000);        // fresh batch each loop
+})();
+</script>
 </body>
 </html>
