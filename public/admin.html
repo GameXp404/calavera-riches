@@ -228,6 +228,25 @@
       <div class="stat-card"><div class="label">🟢 Online (asli, 5mnt)</div><div class="val" id="stat-online" style="color:#36d96b;">0</div></div>
       <div class="stat-card"><div class="label">👥 Tampil ke pemain</div><div class="val" id="stat-online-display" style="color:#ffd24a;">—</div></div>
     </div>
+
+    <div style="background:#161427;border:1px solid #2a2740;border-radius:10px;padding:14px;margin:0 0 14px;">
+      <div style="font-weight:800;margin-bottom:10px;color:#ffd24a;">🎛️ Pengaturan Tampilan Live <span class="crumb">(berlaku ke Lobby + semua Game)</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="cfg-online-enabled"> Tampilkan jumlah pemain online
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;">
+          Jumlah manual:
+          <input type="number" id="cfg-online-manual" min="0" placeholder="0" style="width:110px;padding:5px 8px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;">
+          <span style="color:var(--muted);font-size:11px;">(0 = animasi otomatis)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="cfg-winfeed-enabled"> Tampilkan Win Feed
+        </label>
+        <button id="cfg-save-btn" style="padding:7px 16px;border-radius:7px;border:0;background:var(--accent,#36d96b);color:#06210f;font-weight:800;cursor:pointer;">💾 Simpan</button>
+      </div>
+    </div>
+
     <div class="toolbar">
       <input id="search-input" placeholder="🔍 Cari username...">
       <button id="add-user-btn">➕ Tambah User</button>
@@ -629,6 +648,7 @@
 
     renderLeaderboard(users);
     await renderBigWinLog();
+    loadLiveConfig();
   }
 
   function renderLeaderboard(users) {
@@ -1086,6 +1106,28 @@
       toast('Semua data di-reset', 'success');
     });
   }
+
+  // ---------- Live display config (player count + win feed) ----------
+  async function loadLiveConfig(){
+    try {
+      const s = await api('/api/admin/settings');
+      $('cfg-online-enabled').checked = !(s.online_enabled === false || s.online_enabled === 'false');
+      $('cfg-winfeed-enabled').checked = !(s.winfeed_enabled === false || s.winfeed_enabled === 'false');
+      const m = parseInt(s.online_manual, 10);
+      $('cfg-online-manual').value = (!Number.isNaN(m) && m > 0) ? m : '';
+    } catch (e) { /* keep current checkbox state */ }
+  }
+  async function saveLiveConfig(){
+    try {
+      const manual = Math.max(0, parseInt($('cfg-online-manual').value, 10) || 0);
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_enabled',  value: $('cfg-online-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'winfeed_enabled',  value: $('cfg-winfeed-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_manual',    value: manual } });
+      toast('Pengaturan tampilan live tersimpan ✓ (refresh lobby/game untuk lihat)');
+    } catch (e) { toast('Gagal simpan: ' + e.message, 'error'); }
+  }
+  const _cfgBtn = document.getElementById('cfg-save-btn');
+  if (_cfgBtn) _cfgBtn.addEventListener('click', saveLiveConfig);
 
   if (isLoggedIn()) showDashboard();
   else $('adm-pass').focus();

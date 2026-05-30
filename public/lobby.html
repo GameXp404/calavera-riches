@@ -1162,28 +1162,34 @@
 </style>
 <script>
 (function(){
-  // ---------- LIVE PLAYER COUNT (lively animated, time-of-day aware) ----------
+  // ---------- LIVE PLAYER COUNT (admin-controlled: on/off + manual number) ----------
+  var _manual = 0;
   function targetOnline(){
+    if (_manual > 0){
+      var span = Math.max(3, Math.round(_manual * 0.02));   // small jitter around manual value
+      return _manual + (Math.floor(Math.random()*(span*2+1)) - span);
+    }
     var h = new Date().getHours();
-    var wave = Math.sin((h - 4) / 24 * Math.PI * 2);      // low ~4am, peak ~evening
-    var base = 600 + Math.round((wave + 1) / 2 * 1850);   // ~600..2450
-    return base + (Math.floor(Math.random()*140) - 40);
+    var wave = Math.sin((h - 4) / 24 * Math.PI * 2);        // low ~4am, peak ~evening
+    return 600 + Math.round((wave + 1) / 2 * 1850) + (Math.floor(Math.random()*140) - 40);
   }
-  var cur = targetOnline();
-  var el = document.getElementById('gg-online-num');
-  function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
-  render(cur);
-  setInterval(function(){
-    var tgt = targetOnline();
-    var diff = tgt - cur;
-    var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
-    cur += step + (Math.floor(Math.random()*9) - 4);      // jitter for liveliness
+  var numEl = document.getElementById('gg-online-num');
+  function startCounter(){
+    var cur = targetOnline();
+    function render(n){ if (numEl) numEl.textContent = Math.max(1, Math.round(n)).toLocaleString('id-ID'); }
     render(cur);
-  }, 3200);
+    setInterval(function(){
+      var tgt = targetOnline();
+      var diff = tgt - cur;
+      var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+      cur += step + (Math.floor(Math.random()*9) - 4);
+      render(cur);
+    }, 3200);
+  }
 
-  // ---------- LIVE WIN FEED (simulated recent wins) ----------
+  // ---------- LIVE WIN FEED (simulated; only games available in this lobby) ----------
   var NAMES = ['budi','siti','andi','rina','joko','maya','agus','dewi','eko','putri','hendra','wati','bayu','lina','dani','sri','yudi','nita','rian','tari','arif','indah','fajar','citra','rizki','ayu','dimas','mega','wawan','novi','teguh','vina','ilham','rara','galih','sasa','bagas','kiki','reza','mela','samsul','jaya','maman','toni','yuni','adit','linda','rudi','desi','oki'];
-  var GAMES = ['Knight Kingdom','Calavera Riches','MiniSlots','Gates of Olympus','Sweet Bonanza','Mahjong Ways','Starlight Princess','Lucky Neko'];
+  var GAMES = ['Knight Kingdom','Calavera Riches'];
   var TIERS = [50000,80000,120000,250000,400000,750000,1200000,2500000,5000000,8800000,15000000];
   function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
   function maskName(){ var n = rnd(NAMES); return n.slice(0,3) + '***' + (Math.floor(Math.random()*90)+10); }
@@ -1197,10 +1203,21 @@
     if (!track) return;
     var html = '';
     for (var i=0;i<14;i++) html += makeItem();
-    track.innerHTML = html + html;   // duplicate for seamless loop
+    track.innerHTML = html + html;
   }
-  refill();
-  setInterval(refill, 42000);        // fresh batch each loop
+  function startFeed(){ refill(); setInterval(refill, 42000); }
+
+  // ---------- apply operator config from admin ----------
+  function apply(cfg){
+    cfg = cfg || {};
+    var onlineWrap = document.getElementById('gg-online');
+    var feedWrap = document.getElementById('gg-winfeed');
+    if (cfg.onlineEnabled === false) { if (onlineWrap) onlineWrap.style.display = 'none'; }
+    else { _manual = cfg.onlineManual || 0; startCounter(); }
+    if (cfg.winfeedEnabled === false) { if (feedWrap) feedWrap.style.display = 'none'; }
+    else { startFeed(); }
+  }
+  fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(apply).catch(function(){ apply({}); });
 })();
 </script>
 </body>

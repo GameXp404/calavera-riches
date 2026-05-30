@@ -148,23 +148,32 @@
   </style>
   <script>
     (function(){
+      var _manual = 0;
       function targetOnline(){
+        if (_manual > 0){ var span = Math.max(3, Math.round(_manual * 0.02)); return _manual + (Math.floor(Math.random()*(span*2+1)) - span); }
         var h = new Date().getHours();
         var wave = Math.sin((h - 4) / 24 * Math.PI * 2);
-        var base = 600 + Math.round((wave + 1) / 2 * 1850);
-        return base + (Math.floor(Math.random()*140) - 40);
+        return 600 + Math.round((wave + 1) / 2 * 1850) + (Math.floor(Math.random()*140) - 40);
       }
-      var cur = targetOnline();
       var el = document.getElementById('gg-online-game-num');
-      function render(n){ if (el) el.textContent = Math.max(50, Math.round(n)).toLocaleString('id-ID'); }
-      render(cur);
-      setInterval(function(){
-        var tgt = targetOnline();
-        var diff = tgt - cur;
-        var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
-        cur += step + (Math.floor(Math.random()*9) - 4);
+      var wrap = document.getElementById('gg-online-game');
+      function startCounter(){
+        var cur = targetOnline();
+        function render(n){ if (el) el.textContent = Math.max(1, Math.round(n)).toLocaleString('id-ID'); }
         render(cur);
-      }, 3200);
+        setInterval(function(){
+          var tgt = targetOnline();
+          var diff = tgt - cur;
+          var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
+          cur += step + (Math.floor(Math.random()*9) - 4);
+          render(cur);
+        }, 3200);
+      }
+      fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(function(cfg){
+        cfg = cfg || {};
+        if (cfg.onlineEnabled === false) { if (wrap) wrap.style.display = 'none'; return; }
+        _manual = cfg.onlineManual || 0; startCounter();
+      }).catch(function(){ startCounter(); });
     })();
   </script>
 </body>
