@@ -300,6 +300,22 @@
   }
   .cat-badge.new { background: var(--green); }
 
+  /* Hover "lift" — same feel as the game tiles, applied to nav pills, profile & coin */
+  .cat-item, .profile-mini, .balance-chip {
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .cat-item:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .profile-mini:hover, .balance-chip:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  }
+
   /* ============= HERO BANNER (Daily Bonus rotator) ============= */
   .hero {
     margin: 14px 12px;
@@ -722,7 +738,6 @@
   </div>
 
   <!-- GAMES SECTION -->
-  <div class="section-title">🎰 SLOTS — POPULER HARI INI</div>
   <div class="games-grid">
     <!-- ACTIVE: Calavera Riches -->
     <div class="game-tile" id="game-calavera">
@@ -731,7 +746,6 @@
         <div class="tile-name">CALAVERA RICHES</div>
         <div class="tile-meta">1024 Ways · RTP 96.5%</div>
       </div>
-      <div class="tile-badge hot">🔥 HOT</div>
       <div class="tile-players" id="gp-calavera"><span class="gp-dot"></span><span class="gp-num">—</span></div>
     </div>
 
@@ -742,7 +756,6 @@
         <div class="tile-name">KNIGHT KINGDOM</div>
         <div class="tile-meta">5×3 Slot · Free Spins · Jackpot</div>
       </div>
-      <div class="tile-badge new">⚔️ NEW</div>
       <div class="tile-players" id="gp-knight"><span class="gp-dot"></span><span class="gp-num">—</span></div>
     </div>
 
