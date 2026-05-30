@@ -3933,11 +3933,27 @@ body:has(#freespin-badge) #marquee-banner { display: none; }
 }
 
 /* Back to Lobby button (shown when user came from /lobby) */
-.back-lobby-btn {
+.cal-topbar {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
   left: 12px;
   z-index: 200;
+  display: flex; align-items: center; gap: 10px;
+}
+.cal-topbar.hidden { display: none; }
+.cal-online {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px; font-weight: 800; letter-spacing: 1px;
+  color: #fff;
+}
+.cal-online .cal-dot { width: 8px; height: 8px; border-radius: 50%; background: #36d96b; box-shadow: 0 0 7px #36d96b; animation: calpulse 1.5s infinite; }
+@keyframes calpulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
+.back-lobby-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 14px 8px 10px;
   background: linear-gradient(180deg, #ffd24d 0%, #d4a017 100%);

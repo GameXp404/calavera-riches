@@ -214,11 +214,14 @@
 
   <div id="game-container">
 
-    <!-- Lobby return button (only visible when user came from lobby) -->
-    <button id="btn-back-lobby" class="back-lobby-btn hidden" title="Kembali ke Lobby">
-      <span style="font-size:18px;">🏠</span>
-      <span class="back-lobby-label">LOBBY</span>
-    </button>
+    <!-- Lobby return + live online counter (only visible when user came from lobby) -->
+    <div id="cal-topbar" class="cal-topbar hidden">
+      <button id="btn-back-lobby" class="back-lobby-btn" title="Kembali ke Lobby">
+        <span style="font-size:16px;line-height:1;">&larr;</span>
+        <span class="back-lobby-label">LOBBY</span>
+      </button>
+      <span id="cal-online" class="cal-online" title="Pemain online"><span class="cal-dot"></span><span id="cal-online-num">—</span>&nbsp;main</span>
+    </div>
 
     <div id="hud-top">
       <div class="header-frame"></div>

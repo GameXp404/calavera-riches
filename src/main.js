@@ -2109,10 +2109,39 @@ function setupMainMenuUI() {
 
   // BACK TO LOBBY button (always visible during gameplay when from lobby session)
   const backLobbyBtn = document.getElementById('btn-back-lobby');
+  const calTopbar = document.getElementById('cal-topbar');
   if (backLobbyBtn) {
     if (localStorage.getItem('calavera_lobby_token')) {
-      backLobbyBtn.classList.remove('hidden');
+      if (calTopbar) calTopbar.classList.remove('hidden');
       backLobbyBtn.addEventListener('click', () => { window.location.href = '/lobby'; });
+
+      // Live online counter — per-game Calavera count (synced with admin/lobby, NOT the global).
+      (function () {
+        const numEl = document.getElementById('cal-online-num');
+        const wrap = document.getElementById('cal-online');
+        if (!numEl) return;
+        let manual = 0;
+        const target = () => {
+          if (manual > 0) { const sp = Math.max(2, Math.round(manual * 0.02)); return manual + (Math.floor(Math.random() * (sp * 2 + 1)) - sp); }
+          const h = new Date().getHours(); const w = Math.sin((h - 4) / 24 * Math.PI * 2);
+          return 240 + Math.round((w + 1) / 2 * 240 * 0.9) + (Math.floor(Math.random() * 40) - 14);
+        };
+        const run = () => {
+          let cur = target();
+          const render = (n) => { numEl.textContent = Math.max(1, Math.round(n)).toLocaleString('id-ID'); };
+          render(cur);
+          setInterval(() => {
+            const tg = target(); const d = tg - cur;
+            const st = (d === 0 ? 0 : (d > 0 ? 1 : -1)) * Math.min(Math.abs(d), 3 + Math.floor(Math.random() * 10));
+            cur += st + (Math.floor(Math.random() * 9) - 4); render(cur);
+          }, 3200);
+        };
+        fetch('/api/lobby-config').then((r) => r.json()).then((cfg) => {
+          const g = (cfg && cfg.gamePlayers && cfg.gamePlayers.calavera) || {};
+          if (g.enabled === false) { if (wrap) wrap.style.display = 'none'; return; }
+          manual = g.count || 0; run();
+        }).catch(() => run());
+      })();
     }
   }
 
