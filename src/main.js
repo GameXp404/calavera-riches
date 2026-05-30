@@ -2115,6 +2115,17 @@ function setupMainMenuUI() {
       if (calTopbar) calTopbar.classList.remove('hidden');
       backLobbyBtn.addEventListener('click', () => { window.location.href = '/lobby'; });
 
+      // Username + balance mirror (top bar reflects the in-game HUD)
+      const barUser = document.getElementById('cal-bar-user');
+      if (barUser) barUser.textContent = localStorage.getItem('calavera_user') || 'Guest';
+      const balSrc = document.getElementById('balance');
+      const balDst = document.getElementById('cal-bar-balance-val');
+      if (balSrc && balDst) {
+        const syncBal = () => { balDst.textContent = balSrc.textContent; };
+        syncBal();
+        setInterval(syncBal, 800);
+      }
+
       // Live online counter — per-game Calavera count (synced with admin/lobby, NOT the global).
       (function () {
         const numEl = document.getElementById('cal-online-num');

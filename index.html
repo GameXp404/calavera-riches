@@ -214,13 +214,13 @@
 
   <div id="game-container">
 
-    <!-- Lobby return + live online counter (only visible when user came from lobby) -->
+    <!-- Full top bar (matches Knight layout) — only visible when user came from lobby -->
     <div id="cal-topbar" class="cal-topbar hidden">
-      <button id="btn-back-lobby" class="back-lobby-btn" title="Kembali ke Lobby">
-        <span style="font-size:16px;line-height:1;">&larr;</span>
-        <span class="back-lobby-label">LOBBY</span>
-      </button>
+      <button id="btn-back-lobby" class="cal-back" title="Kembali ke Lobby">&larr;&nbsp;LOBBY</button>
+      <span class="cal-title">&#x1F480; CALAVERA RICHES</span>
       <span id="cal-online" class="cal-online" title="Pemain online"><span class="cal-dot"></span><span id="cal-online-num">—</span>&nbsp;main</span>
+      <span id="cal-bar-balance" class="cal-bar-balance">&#x1F4B0; <span id="cal-bar-balance-val">—</span></span>
+      <span id="cal-bar-user" class="cal-bar-user">—</span>
     </div>
 
     <div id="hud-top">
