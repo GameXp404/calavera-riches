@@ -243,7 +243,21 @@
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
           <input type="checkbox" id="cfg-winfeed-enabled"> Tampilkan Win Feed
         </label>
-        <button id="cfg-save-btn" style="padding:7px 16px;border-radius:7px;border:0;background:var(--accent,#36d96b);color:#06210f;font-weight:800;cursor:pointer;">💾 Simpan</button>
+      </div>
+      <div style="border-top:1px solid #2a2740;margin-top:12px;padding-top:12px;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;margin-bottom:9px;">
+          <input type="checkbox" id="cfg-gameplayers-enabled"> 👤 Tampilkan jumlah pemain per game (di tiap kotak game)
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;">🎰 Calavera Riches:
+            <input type="number" id="cfg-players-calavera" min="0" placeholder="0" style="width:100px;padding:5px 8px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;">⚔️ Knight Kingdom:
+            <input type="number" id="cfg-players-knight" min="0" placeholder="0" style="width:100px;padding:5px 8px;border-radius:6px;border:1px solid #3a3560;background:#0f0e1c;color:#fff;"></label>
+          <span style="color:var(--muted);font-size:11px;">(0 = otomatis per game)</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="cfg-save-btn" style="padding:7px 18px;border-radius:7px;border:0;background:var(--accent,#36d96b);color:#06210f;font-weight:800;cursor:pointer;">💾 Simpan Semua</button>
       </div>
     </div>
 
@@ -1113,16 +1127,24 @@
       const s = await api('/api/admin/settings');
       $('cfg-online-enabled').checked = !(s.online_enabled === false || s.online_enabled === 'false');
       $('cfg-winfeed-enabled').checked = !(s.winfeed_enabled === false || s.winfeed_enabled === 'false');
+      $('cfg-gameplayers-enabled').checked = !(s.gameplayers_enabled === false || s.gameplayers_enabled === 'false');
       const m = parseInt(s.online_manual, 10);
       $('cfg-online-manual').value = (!Number.isNaN(m) && m > 0) ? m : '';
+      const pc = parseInt(s.players_calavera, 10); $('cfg-players-calavera').value = (!Number.isNaN(pc) && pc > 0) ? pc : '';
+      const pk = parseInt(s.players_knight, 10);   $('cfg-players-knight').value   = (!Number.isNaN(pk) && pk > 0) ? pk : '';
     } catch (e) { /* keep current checkbox state */ }
   }
   async function saveLiveConfig(){
     try {
       const manual = Math.max(0, parseInt($('cfg-online-manual').value, 10) || 0);
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_enabled',  value: $('cfg-online-enabled').checked } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'winfeed_enabled',  value: $('cfg-winfeed-enabled').checked } });
-      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_manual',    value: manual } });
+      const pCal = Math.max(0, parseInt($('cfg-players-calavera').value, 10) || 0);
+      const pKni = Math.max(0, parseInt($('cfg-players-knight').value, 10) || 0);
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_enabled',      value: $('cfg-online-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'winfeed_enabled',      value: $('cfg-winfeed-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'online_manual',        value: manual } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'gameplayers_enabled',  value: $('cfg-gameplayers-enabled').checked } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_calavera',     value: pCal } });
+      await api('/api/admin/settings', { method:'PATCH', body:{ key:'players_knight',       value: pKni } });
       toast('Pengaturan tampilan live tersimpan ✓ (refresh lobby/game untuk lihat)');
     } catch (e) { toast('Gagal simpan: ' + e.message, 'error'); }
   }

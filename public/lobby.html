@@ -742,6 +742,7 @@
         <div class="tile-meta">1024 Ways · RTP 96.5%</div>
       </div>
       <div class="tile-badge hot">🔥 HOT</div>
+      <div class="tile-players" id="gp-calavera"><span class="gp-dot"></span><span class="gp-num">—</span></div>
     </div>
 
     <!-- Knight Kingdom Slot — Unity WebGL build (live via Unity Cloud Build) -->
@@ -752,6 +753,7 @@
         <div class="tile-meta">5×3 Slot · Free Spins · Jackpot</div>
       </div>
       <div class="tile-badge new">⚔️ NEW</div>
+      <div class="tile-players" id="gp-knight"><span class="gp-dot"></span><span class="gp-num">—</span></div>
     </div>
 
     <!-- COMING SOON tiles (placeholder slots for future games) -->
@@ -1159,6 +1161,9 @@
   .gg-win-item b{color:#fff;}
   .gg-win-item .amt{color:#ffd24a;font-weight:800;}
   @keyframes ggmarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .tile-players{position:absolute;left:8px;bottom:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:3px 9px;font-size:12px;font-weight:800;color:#fff;z-index:3;backdrop-filter:blur(2px);}
+  .tile-players .gp-dot{width:7px;height:7px;border-radius:50%;background:#36d96b;box-shadow:0 0 6px #36d96b;animation:ggpulse 1.5s infinite;}
+  .tile-players .gp-num{color:#fff;}
 </style>
 <script>
 (function(){
@@ -1207,6 +1212,37 @@
   }
   function startFeed(){ refill(); setInterval(refill, 42000); }
 
+  // ---------- per-game player count badges (like Higgs lobby) ----------
+  var GAME_BASES = { calavera: 240, knight: 190 };   // auto base per game (animated)
+  function animateGame(id, manual, base){
+    var el = document.getElementById('gp-' + id);
+    if (!el) return;
+    var num = el.querySelector('.gp-num');
+    function tgt(){
+      if (manual > 0){ var sp = Math.max(2, Math.round(manual*0.02)); return manual + (Math.floor(Math.random()*(sp*2+1)) - sp); }
+      var h = new Date().getHours(); var wave = Math.sin((h-4)/24*Math.PI*2);
+      return base + Math.round((wave+1)/2 * base*0.9) + (Math.floor(Math.random()*40) - 14);
+    }
+    var cur = tgt();
+    function render(n){ if (num) num.textContent = Math.max(1, Math.round(n)).toLocaleString('id-ID'); }
+    render(cur);
+    setInterval(function(){
+      var t = tgt(); var d = t - cur;
+      var s = (d===0?0:(d>0?1:-1)) * Math.min(Math.abs(d), 2 + Math.floor(Math.random()*6));
+      cur += s + (Math.floor(Math.random()*5) - 2); render(cur);
+    }, 3400 + Math.floor(Math.random()*1600));
+  }
+  function applyGamePlayers(cfg){
+    var enabled = cfg.gamePlayersEnabled !== false;   // default on
+    var gp = cfg.gamePlayers || {};
+    Object.keys(GAME_BASES).forEach(function(id){
+      var el = document.getElementById('gp-' + id);
+      if (!el) return;
+      if (!enabled){ el.style.display = 'none'; return; }
+      animateGame(id, (gp[id] || 0), GAME_BASES[id]);
+    });
+  }
+
   // ---------- apply operator config from admin ----------
   function apply(cfg){
     cfg = cfg || {};
@@ -1216,6 +1252,7 @@
     else { _manual = cfg.onlineManual || 0; startCounter(); }
     if (cfg.winfeedEnabled === false) { if (feedWrap) feedWrap.style.display = 'none'; }
     else { startFeed(); }
+    applyGamePlayers(cfg);
   }
   fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(apply).catch(function(){ apply({}); });
 })();

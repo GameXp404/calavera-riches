@@ -11,23 +11,27 @@ import { jsonError, jsonOk } from './_lib/auth.js';
 export default async function handler(req, res) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
 
+  const GAME_IDS = ['calavera', 'knight'];   // games shown in the lobby
+
   const { data } = await supabase
     .from('settings')
     .select('key,value')
-    .in('key', ['online_enabled', 'online_manual', 'winfeed_enabled']);
+    .in('key', ['online_enabled', 'online_manual', 'winfeed_enabled', 'gameplayers_enabled',
+      ...GAME_IDS.map((g) => `players_${g}`)]);
 
   const s = {};
   (data || []).forEach((r) => { s[r.key] = r.value; });
 
   const truthy = (v, def) => (v == null ? def : !(v === false || v === 'false' || v === 0 || v === '0'));
+  const toInt = (v) => { if (v == null) return 0; const n = typeof v === 'number' ? v : parseInt(v, 10); return (!Number.isNaN(n) && n > 0) ? n : 0; };
+
   const onlineEnabled = truthy(s.online_enabled, true);
   const winfeedEnabled = truthy(s.winfeed_enabled, true);
+  const gamePlayersEnabled = truthy(s.gameplayers_enabled, true);
+  const onlineManual = toInt(s.online_manual);
 
-  let onlineManual = 0;
-  if (s.online_manual != null) {
-    const n = typeof s.online_manual === 'number' ? s.online_manual : parseInt(s.online_manual, 10);
-    if (!Number.isNaN(n) && n > 0) onlineManual = n;
-  }
+  const gamePlayers = {};
+  GAME_IDS.forEach((g) => { gamePlayers[g] = toInt(s[`players_${g}`]); });   // 0 = auto-animated
 
-  return jsonOk(res, { onlineEnabled, onlineManual, winfeedEnabled });
+  return jsonOk(res, { onlineEnabled, onlineManual, winfeedEnabled, gamePlayersEnabled, gamePlayers });
 }
