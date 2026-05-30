@@ -197,8 +197,9 @@
     </div>
   </header>
 
-  <div id="adm-online" title="Pemain online (sinkron dengan game)" style="position:fixed;top:72px;right:30px;z-index:50;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#fff;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.6);border-radius:20px;padding:5px 14px;">
-    <span style="font-size:15px;">👁️</span><span id="adm-online-num" style="color:#5be07a;">0</span>&nbsp;online
+  <style>@keyframes admpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}} #adm-online .adm-dot{width:9px;height:9px;border-radius:50%;background:#36d96b;box-shadow:0 0 8px #36d96b;animation:admpulse 1.5s infinite;}</style>
+  <div id="adm-online" title="Pemain online (sinkron dengan game yang dibuka)" style="position:fixed;top:72px;right:30px;z-index:50;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#5be07a;background:rgba(54,217,107,.16);border:1px solid rgba(54,217,107,.6);border-radius:20px;padding:5px 14px;">
+    <span class="adm-dot"></span><span id="adm-online-num">0</span>&nbsp;online
   </div>
   <div class="admin-layout">
     <!-- SIDEBAR -->
@@ -582,6 +583,7 @@
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + viewId));
     document.querySelectorAll('.sidebar-link').forEach((l) => l.classList.toggle('active', l.dataset.view === viewId));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.__admOnlineCtx) window.__admOnlineCtx(viewId);
   }
   document.querySelectorAll('.sidebar-link').forEach((link) => {
     link.addEventListener('click', () => switchView(link.dataset.view));
@@ -1195,10 +1197,23 @@
 <!-- Lively "tampil ke pemain" counter — MUST match lobby.html formula -->
 <script>
 (function(){
-  // Same formula + config as lobby/game so the number stays in sync (esp. when manual is set).
-  var _manual = 0;
-  function targetOnline(){
-    if (_manual > 0){ var sp = Math.max(3, Math.round(_manual*0.02)); return _manual + (Math.floor(Math.random()*(sp*2+1)) - sp); }
+  // Per-view counter: in a game view it shows THAT game's per-game count (synced with the in-game
+  // counter + lobby tile, NOT the global); in the lobby view it shows the global online number.
+  // Bases match lobby.html GAME_BASES so auto-mode numbers line up with the game's own counter.
+  var BASES = { calavera: 240, knight: 190 };
+  var cfg = { onlineManual: 0, gamePlayers: {} };
+  var ctx = 'lobby';
+  function targetFor(){
+    if (ctx === 'calavera' || ctx === 'knight'){
+      var g = cfg.gamePlayers[ctx] || {};
+      var man = g.count || 0;
+      if (man > 0){ var sp = Math.max(2, Math.round(man*0.02)); return man + (Math.floor(Math.random()*(sp*2+1)) - sp); }
+      var base = BASES[ctx] || 200;
+      var hh = new Date().getHours(); var w2 = Math.sin((hh - 4) / 24 * Math.PI * 2);
+      return base + Math.round((w2 + 1) / 2 * base * 0.9) + (Math.floor(Math.random()*40) - 14);
+    }
+    var gm = cfg.onlineManual || 0;
+    if (gm > 0){ var sp2 = Math.max(3, Math.round(gm*0.02)); return gm + (Math.floor(Math.random()*(sp2*2+1)) - sp2); }
     var h = new Date().getHours();
     var wave = Math.sin((h - 4) / 24 * Math.PI * 2);
     return 600 + Math.round((wave + 1) / 2 * 1850) + (Math.floor(Math.random()*140) - 40);
@@ -1208,16 +1223,21 @@
   var cur;
   function render(n){ var t = Math.max(1, Math.round(n)).toLocaleString('id-ID'); if (statEl) statEl.textContent = t; if (hdrEl) hdrEl.textContent = t; }
   function start(){
-    cur = targetOnline(); render(cur);
+    cur = targetFor(); render(cur);
     setInterval(function(){
-      var tgt = targetOnline();
+      var tgt = targetFor();
       var diff = tgt - cur;
       var step = (diff === 0 ? 0 : (diff > 0 ? 1 : -1)) * Math.min(Math.abs(diff), 3 + Math.floor(Math.random()*10));
       cur += step + (Math.floor(Math.random()*9) - 4);
       render(cur);
     }, 3200);
   }
-  fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(function(cfg){ _manual = (cfg && cfg.onlineManual) || 0; start(); }).catch(function(){ start(); });
+  // switchView() calls this so the badge follows the active view.
+  window.__admOnlineCtx = function(viewId){
+    ctx = (viewId === 'game-calavera') ? 'calavera' : (viewId === 'game-knight') ? 'knight' : 'lobby';
+    if (cur != null){ cur = targetFor(); render(cur); }
+  };
+  fetch('/api/lobby-config').then(function(r){ return r.json(); }).then(function(c){ if (c){ cfg.onlineManual = c.onlineManual || 0; cfg.gamePlayers = c.gamePlayers || {}; } start(); }).catch(function(){ start(); });
 })();
 </script>
 
